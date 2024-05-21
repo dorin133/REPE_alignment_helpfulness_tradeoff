@@ -4,12 +4,13 @@ from tqdm import tqdm
 import numpy as np
 from transformers import AutoTokenizer, pipeline, AutoModelForCausalLM, AutoConfig
 from repe.rep_control_reading_vec import WrappedReadingVecModel
-from harmfulness_utils_ver2 import reading_vec_dataset_by_github
+from harmfulness_utils_ver2 import reading_vec_dataset_by_github, reading_vec_dataset_Q_and_A
 from repe import repe_pipeline_registry
 repe_pipeline_registry()
 
 ################################# load model
-model_name_or_path = 'meta-llama/Llama-2-13b-chat-hf'
+model_name = "Llama-2-13b" # OPTIONS: "Llama-2-13b-chat" / "Llama-2-13b"
+model_name_or_path = f"../../llama2/{model_name}/"
 model = AutoModelForCausalLM.from_pretrained(model_name_or_path, torch_dtype=torch.float16, device_map="auto", token=True).eval() 
 use_fast_tokenizer = "LlamaForCausalLM" not in model.config.architectures
 tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=use_fast_tokenizer, padding_side="left", legacy=False, token=True)
@@ -17,9 +18,20 @@ tokenizer.pad_token_id = 0 if tokenizer.pad_token_id is None else tokenizer.pad_
 tokenizer.bos_token_id = 1
 print("load model finished!")
 
-####################### load the bias dataset behavior - by github
-train_data, train_labels, test_data_by_template, raw_test_data = reading_vec_dataset_by_github()
-train_data, train_labels, _ = reading_vec_dataset_by_github()
+####################### load the necessary bias dataset behavior 
+if model_name == "Llama-2-13b":
+    # raw model
+    train_data, train_labels, _, _ = reading_vec_dataset_Q_and_A()
+    train_data = [elem.replace("QUESTION: ", "QUESTION: Can you") for elem in train_data]
+    train_data = [elem.replace("\n\nANSWER: ", "\n\n? ANSWER: ") for elem in train_data]
+    train_data = [elem.split('ANSWER: ')[0]+'ANSWER: '+elem.split('ANSWER: ')[1][:100] for elem in train_data]
+    save_data_dir = 'separation_by_dr_raw_model'
+else:
+    # chat model
+    save_data_dir = 'separation_by_dr_chat_model'
+    train_data, train_labels, _, _ = reading_vec_dataset_by_github()
+    
+_, _, _, raw_test_data = reading_vec_dataset_by_github()
 
 ####################### read vectors from bias dataset
 rep_token = -1
@@ -39,25 +51,14 @@ wrapped_model = WrappedReadingVecModel(model, tokenizer)
 wrapped_model.unwrap()
 wrapped_model.wrap_block(layer_id, block_name='decoder_block')
 
-
-#test model on dataset for various norms of injected vectors
-x = [i for i in np.arange(-10, 10.5, 0.5)]
-
-indices_vocab = [13, 29871, 4013, 8439, 7058, 1576, 3112, 29961, 29930, 797, 5618, 8241, 3644, 1762, 21956, 10605, 1349, 7504, 29903, 2052, 3492, 2855, 29909, 1678, 29933, 2683, 28956, 259, 29295, 2831]
-tokens = [tokenizer.convert_ids_to_tokens(index) for index in indices_vocab]
-with open(f'generations_multi_choice_harm/most_probable_tokens_coeff_pos.json', 'w') as file:
-    json.dump(tokens, file)
-possible_answers = [29900, 29896, 29906, 29941, 29946, 29945, 29953, 29955, 29947, 29929]
-
-# file_path = 'harmful_multi_choice_inst_try2.txt'
-# with open(file_path, 'r') as file:
-#     instruction = file.read()
-
-
+# Extract logits on the harmful test dataset for various norms of injected vectors
+# This is the raw data necessary for running separate_by_dr_visualization.py code 
+x = [i for i in np.arange(-10, 10.2, 0.2)]
 coeff = 0 
 activations = {}
+
 for j, instruction in enumerate(raw_test_data[1:20:2]):
-    prompt = torch.unsqueeze(torch.tensor(tokenizer.encode(tokenizer.encode(instruction))),dim=0)
+    prompt = torch.unsqueeze(torch.tensor(tokenizer.encode(instruction)),dim=0)
     for layer in layer_id:
         v = torch.tensor(pca_vectors[layer]*pca_signs[layer][0])
         v = (v / torch.norm(v)).cpu()
@@ -67,11 +68,12 @@ for j, instruction in enumerate(raw_test_data[1:20:2]):
     with torch.no_grad():
         logits_gt = wrapped_model(input_ids=prompt.cuda()).logits[0, -1]
         logits_gt = logits_gt.to(dtype=torch.float32)
-    with open(f'separation_by_dr/logits_iter_gt_inst_{j}.json', 'w') as file:
+    with open(f'../../lab_data/{save_data_dir}/logits_iter_gt_inst_{j}.json', 'w') as file:
         json.dump(logits_gt.tolist(), file)
 
+
 for j, instruction in enumerate(raw_test_data[1:20:2]):
-    prompt = torch.unsqueeze(torch.tensor(tokenizer.encode(tokenizer.encode(instruction))),dim=0)
+    prompt = torch.unsqueeze(torch.tensor(tokenizer.encode(instruction)),dim=0)
     for i, coeff in tqdm(enumerate(x), total=len(x)):
         activations = {}
         for layer in layer_id:
@@ -83,5 +85,5 @@ for j, instruction in enumerate(raw_test_data[1:20:2]):
         with torch.no_grad():
             logits = wrapped_model(input_ids=prompt.cuda()).logits[0, -1]
             logits = logits.to(dtype=torch.float32)
-        with open(f'separation_by_dr/logits_iter_{i}_inst_{j}.json', 'w') as file:
+        with open(f'../../lab_data/{save_data_dir}/logits_iter_{i}_inst_{j}.json', 'w') as file:
             json.dump(logits.tolist(), file)

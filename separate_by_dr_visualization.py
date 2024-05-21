@@ -33,15 +33,15 @@ def values_for_keys(dictionary, keys):
     return [dictionary[key] for key in keys if key in dictionary]
 
 ############  initialize parameters  ############
-model_name = "Llama-2-13b-chat"
+model_name = "Llama-2-13b" # OPTIONS: "Llama-2-13b" or "Llama-2-13b-chat"
 if model_name == "Llama-2-13b":
     # raw model
-    save_data_dir = 'separation_by_dr_raw'
+    save_data_dir = 'separation_by_dr_raw_model'
 else:
     # chat model
-    save_data_dir = 'separation_by_dr'
+    save_data_dir = 'separation_by_dr_chat_model'
     
-file_path = f'../../data/{save_data_dir}/lamma2_vocab.json'
+file_path = f'../../lab_data/{save_data_dir}/lamma2_vocab.json'
 with open(file_path, 'r') as file:
   vocabulary = json.load(file)
 
@@ -61,7 +61,7 @@ gt_norms = []
 
 for idx in range(10):
   top_k_indices = []
-  file_path = f'../../data/{save_data_dir}/logits_iter_gt_inst_{idx}.json'
+  file_path = f'../../lab_data/{save_data_dir}/logits_iter_gt_inst_{idx}.json'
   with open(file_path, 'r') as file:
     gt_curr_logits = torch.tensor(json.load(file))
     gt_norms.append(torch.norm(gt_curr_logits).item())
@@ -85,7 +85,7 @@ for idx in range(10):
   all_top_k_indices = []
   # ----- find the indices in the llama2 vocabulary of the most probable tokens of harmful behavior responses ----- #
   for i in range(66, 70):
-    file_path = f"../../data/{save_data_dir}/logits_iter_{i}_inst_{idx}.json"
+    file_path = f"../../lab_data/{save_data_dir}/logits_iter_{i}_inst_{idx}.json"
     with open(file_path, 'r') as file:
       tensor_logits = torch.tensor(json.load(file))
       all_top_k_indices.extend(indices_of_k_most_probable_tokens(tensor_logits, amount_of_tokens))
@@ -101,7 +101,7 @@ for idx in range(10):
 gt_logits_harmful_tokens = {}
 gt_logits_top_gt_tokens = {}
 for idx in range(10):
-  file_path = f"../../data/{save_data_dir}/logits_iter_gt_inst_{idx}.json"
+  file_path = f"../../lab_data/{save_data_dir}/logits_iter_gt_inst_{idx}.json"
   with open(file_path, 'r') as file:
     gt_curr_logits = torch.tensor(json.load(file))
   gt_logits_harmful_tokens[idx] = [gt_curr_logits[curr_idx] for curr_idx in most_probable_harmful_tokens_indices[idx]]
@@ -120,7 +120,7 @@ y_plot = x
 for plot_key in all_x_plots.keys():
   for idx in range(10):
     for i, coeff in enumerate(x):
-      file_path = f"../../data/{save_data_dir}/logits_iter_{i}_inst_{idx}.json"
+      file_path = f"../../lab_data/{save_data_dir}/logits_iter_{i}_inst_{idx}.json"
       with open(file_path, 'r') as file:
         logits = json.load(file)
         curr_logits = torch.tensor(logits)
@@ -135,7 +135,7 @@ for plot_key in all_x_plots.keys():
 #       1. harmful behavior (blue)
 #       2. no representation engineering behavior (red)
 x = [round(i, 1) for i in np.arange(-10, 10.2, 0.2)]
-num_plots = 10
+num_plots = 3 # can be between 1 to 10
 fig, axs = plt.subplots(num_plots, 1, figsize=(28, 6 * num_plots))
 for k in range(num_plots):
   axs[k].scatter(x, all_x_plots['projection_over_harmful_tokens'][k] , color='blue', label='harmful response tokens')
@@ -148,7 +148,7 @@ for k in range(num_plots):
   # axs[k].set_title('Projection on logits of coeff = 0', fontsize=16)
   axs[k].legend(fontsize = 14)
 
-fig.savefig('scatter_plots_separation_2_instructions_delta_2d_format.png')
+fig.savefig(f'scatter_plots_separation_{model_name}.png')
 plt.show()
 
 
@@ -156,7 +156,7 @@ plt.show()
 #       associated with harmful behavior subtracted from tokens associated with no representation engineering behavior
 #       also plot a fitted linear line to compute the lower bound of Assumption 2 in the article
 x = [round(i, 1) for i in np.arange(0, 10.2, 0.2)]
-num_plots = 10
+num_plots = 3 # can be between 1 to 10
 fig, axs = plt.subplots(num_plots, 1, figsize=(28, 6 * num_plots))
 slopes = []
 for idx in range(num_plots):
@@ -173,13 +173,17 @@ for idx in range(num_plots):
   y_linear = torch.tensor(x) * m
   slopes.append(f'plot {idx} slope: {m}')
   axs[idx].plot(x, y_linear , color='red', label=r'|$\delta{r_e(q)}$| $\cdot$ $\Delta$')
+  equation_label = f'y = {round(m, 3)}x'
+  axs[idx].plot([], [], ' ', label=equation_label)  # Empty plot for label
+  axs[idx].legend(fontsize='large')
   # Customizing the plot
   axs[idx].set_xlabel('$r_e$', fontsize=12)
   axs[idx].set_ylabel(r'$\langle$$\delta{r_e(q)}$ , $U^T(e_{good}-e_{bad})$$\rangle$', fontsize=12)
   axs[idx].legend(fontsize = 14)
 
-fig.savefig('plots_separation_lower_bound.png')
-file_slopes_path = f"../../data/{save_data_dir}/estimated_slopes_{save_data_dir}.json"
+fig.savefig(f'plots_separation_lower_bound_{model_name}.png')
+plt.show()
+file_slopes_path = f"../../lab_data/{save_data_dir}/estimated_slopes_{save_data_dir}.json"
 with open(file_slopes_path, 'w') as file:
   json.dump(slopes, file)
-plt.show()
+
