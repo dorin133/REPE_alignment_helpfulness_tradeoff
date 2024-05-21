@@ -120,7 +120,7 @@ y_plot = x
 for plot_key in all_x_plots.keys():
   for idx in range(10):
     for i, coeff in enumerate(x):
-      file_path = f"../../lab_data/{save_data_dir}/logits_iter_{i}_inst_{idx}.json"
+      file_path = f"../../data/{save_data_dir}/logits_iter_{i}_inst_{idx}.json"
       with open(file_path, 'r') as file:
         logits = json.load(file)
         curr_logits = torch.tensor(logits)
