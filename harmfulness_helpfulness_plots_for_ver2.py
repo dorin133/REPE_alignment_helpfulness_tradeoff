@@ -8,8 +8,8 @@ from transformers import AutoTokenizer, pipeline, AutoModelForCausalLM
 from tqdm import tqdm
 import numpy as np
 from repe.rep_control_reading_vec import WrappedReadingVecModel
-from harmfulness_utils import reading_vec_dataset_Q_and_A
-from harmfulness_utils import reading_vec_dataset_by_github, feed_dialog_helpfulness, get_answer_probs
+from harmfulness_utils_ver2 import reading_vec_dataset_Q_and_A
+from harmfulness_utils_ver2 import reading_vec_dataset_by_github, feed_dialog_helpfulness, get_answer_probs
 from repe import repe_pipeline_registry
 repe_pipeline_registry()
 from datasets import load_dataset
@@ -17,7 +17,6 @@ import torch.nn.functional as F
 
 def load_mmlu_dataset(mmlu_dataset_name):
     dataset = load_dataset('lukaemon/mmlu', mmlu_dataset_name)
-    # pd.read_csv(f'/cs/labs/shashua/dorin.shteyman/mmlu/data/test/{mmlu_dataset_name}_test.csv')
     return dataset['test']
 
 #load dataset
@@ -89,7 +88,7 @@ for model_name in ["Llama-2-13b", "Llama-2-13b-chat"]:
             print(f'p_mean for coeff = {coeff}: {p_mean[coeff]}')
             print(f'p_mean_relative for coeff = {coeff}: {p_mean_relative[coeff]}')
 
-        with open(f'../../lab_data/mmlu_plots_correction/helpfulness_plots/{mmlu_dataset_name}_{model_name}_harmfulness.json', 'w') as file:
+        with open(f'../../data/mmlu_plots/helpfulness_plots/{mmlu_dataset_name}_{model_name}_harmfulness.json', 'w') as file:
             results = {'p_mean': p_mean, 'p_mean_relative': p_mean_relative, 'p_std': p_std, 'p_std_relative': p_std_relative}
             json.dump(results, file)
 

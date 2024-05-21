@@ -9,9 +9,9 @@ from transformers import AutoTokenizer, pipeline, AutoModelForCausalLM
 from tqdm import tqdm
 import numpy as np
 from repe.rep_control_reading_vec import WrappedReadingVecModel
-from fairness_utils import bias_dataset_for_alignment, feed_dialog_helpfulness, \
+from fairness_utils_ver2 import bias_dataset_for_alignment, feed_dialog_helpfulness, \
     get_norms_and_projections, get_no_repe_results
-from harmfulness_utils import reading_vec_dataset_by_github, reading_vec_dataset_Q_and_A
+from fairness_utils_ver2 import reading_vec_dataset_by_github, reading_vec_dataset_Q_and_A
 import pandas as pd
 from repe import repe_pipeline_registry
 
@@ -24,7 +24,6 @@ import pdb
 
 def load_mmlu_dataset(mmlu_dataset_name):
     dataset = load_dataset('lukaemon/mmlu', mmlu_dataset_name)
-    # pd.read_csv(f'/cs/labs/shashua/dorin.shteyman/mmlu/data/test/{mmlu_dataset_name}_test.csv')
     return dataset['test']
 
 
@@ -36,10 +35,10 @@ for model_name in ["Llama-2-13b", "Llama-2-13b-chat"]:
     model_name_or_path_chat = f"../../llama2/{model_name}/"
     # model_name_or_path_chat = 'meta-llama/Llama-2-13b-hf'
     model = AutoModelForCausalLM.from_pretrained(model_name_or_path_chat, torch_dtype=torch.float16, device_map="auto",
-                                                 token='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').eval()
+                                                 token=True).eval()
     use_fast_tokenizer = "LlamaForCausalLM" not in model.config.architectures
     tokenizer = AutoTokenizer.from_pretrained(model_name_or_path_chat, use_fast=use_fast_tokenizer, padding_side="left",
-                                              legacy=False, token='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')
+                                              legacy=False, token=True)
     tokenizer.pad_token_id = 0 if tokenizer.pad_token_id is None else tokenizer.pad_token_id
     tokenizer.bos_token_id = 1
     print("load model finished!")
@@ -131,6 +130,6 @@ for model_name in ["Llama-2-13b", "Llama-2-13b-chat"]:
         print(vector_norms)
         print('-----------------------------------')
 
-        with open(f'../../lab_data/mmlu_plots_correction/helpfulness_plots/{mmlu_dataset_name}_{model_name}_harmfulness.json', 'w') as file:
+        with open(f'../../data/mmlu_plots/helpfulness_plots/{mmlu_dataset_name}_{model_name}_harmfulness.json', 'w') as file:
             results = {'p_mean': p_mean, 'p_mean_relative': p_mean_relative, 'p_std': p_std, 'p_std_relative': p_std_relative}
             json.dump(results, file)

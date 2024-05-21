@@ -33,7 +33,7 @@ def values_for_keys(dictionary, keys):
     return [dictionary[key] for key in keys if key in dictionary]
 
 ############  initialize parameters  ############
-model_name = "Llama-2-13b"
+model_name = "Llama-2-13b-chat"
 if model_name == "Llama-2-13b":
     # raw model
     save_data_dir = 'separation_by_dr_raw'
@@ -41,7 +41,7 @@ else:
     # chat model
     save_data_dir = 'separation_by_dr'
     
-file_path = f'../../lab_data/{save_data_dir}/lamma2_vocab.json'
+file_path = f'../../data/{save_data_dir}/lamma2_vocab.json'
 with open(file_path, 'r') as file:
   vocabulary = json.load(file)
 
@@ -61,7 +61,7 @@ gt_norms = []
 
 for idx in range(10):
   top_k_indices = []
-  file_path = f'../../lab_data/{save_data_dir}/logits_iter_gt_inst_{idx}.json'
+  file_path = f'../../data/{save_data_dir}/logits_iter_gt_inst_{idx}.json'
   with open(file_path, 'r') as file:
     gt_curr_logits = torch.tensor(json.load(file))
     gt_norms.append(torch.norm(gt_curr_logits).item())
@@ -85,7 +85,7 @@ for idx in range(10):
   all_top_k_indices = []
   # ----- find the indices in the llama2 vocabulary of the most probable tokens of harmful behavior responses ----- #
   for i in range(66, 70):
-    file_path = f"../../lab_data/{save_data_dir}/logits_iter_{i}_inst_{idx}.json"
+    file_path = f"../../data/{save_data_dir}/logits_iter_{i}_inst_{idx}.json"
     with open(file_path, 'r') as file:
       tensor_logits = torch.tensor(json.load(file))
       all_top_k_indices.extend(indices_of_k_most_probable_tokens(tensor_logits, amount_of_tokens))
@@ -101,7 +101,7 @@ for idx in range(10):
 gt_logits_harmful_tokens = {}
 gt_logits_top_gt_tokens = {}
 for idx in range(10):
-  file_path = f"../../lab_data/{save_data_dir}/logits_iter_gt_inst_{idx}.json"
+  file_path = f"../../data/{save_data_dir}/logits_iter_gt_inst_{idx}.json"
   with open(file_path, 'r') as file:
     gt_curr_logits = torch.tensor(json.load(file))
   gt_logits_harmful_tokens[idx] = [gt_curr_logits[curr_idx] for curr_idx in most_probable_harmful_tokens_indices[idx]]
@@ -158,6 +158,7 @@ plt.show()
 x = [round(i, 1) for i in np.arange(0, 10.2, 0.2)]
 num_plots = 10
 fig, axs = plt.subplots(num_plots, 1, figsize=(28, 6 * num_plots))
+slopes = []
 for idx in range(num_plots):
   k = idx
   axs[idx].scatter(x, (all_x_plots['projection_over_harmful_tokens'][k][50:50+len(x)] - all_x_plots['projection_over_gt_tokens'][k][50:50+len(x)]) , color='purple')
@@ -170,7 +171,7 @@ for idx in range(num_plots):
   m2, b2 = np.polyfit(x_linear2, y_fit2, deg=1)
   m = min(m1, m2)
   y_linear = torch.tensor(x) * m
-
+  slopes.append(f'plot {idx} slope: {m}')
   axs[idx].plot(x, y_linear , color='red', label=r'|$\delta{r_e(q)}$| $\cdot$ $\Delta$')
   # Customizing the plot
   axs[idx].set_xlabel('$r_e$', fontsize=12)
@@ -178,4 +179,7 @@ for idx in range(num_plots):
   axs[idx].legend(fontsize = 14)
 
 fig.savefig('plots_separation_lower_bound.png')
+file_slopes_path = f"../../data/{save_data_dir}/estimated_slopes_{save_data_dir}.json"
+with open(file_slopes_path, 'w') as file:
+  json.dump(slopes, file)
 plt.show()

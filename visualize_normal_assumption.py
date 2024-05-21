@@ -3,11 +3,11 @@ import numpy as np
 import pickle
 import seaborn as sns
 
-with open("/home/binyaminr/Documents/llama-2-13b_high_school_computer_science_race.pkl", 'rb') as f:
+with open("~/llama-2-13b_high_school_computer_science_race.pkl", 'rb') as f:
     computer_science_data = pickle.load(f)
-with open("/home/binyaminr/Documents/llama-2-13b_international_law_race.pkl", 'rb') as f:
+with open("~/llama-2-13b_international_law_race.pkl", 'rb') as f:
     international_law_data = pickle.load(f)
-with open("/home/binyaminr/Documents/llama-2-13b_medical_genetics_race.pkl", 'rb') as f:
+with open("~/llama-2-13b_medical_genetics_race.pkl", 'rb') as f:
     medical_genetics_data = pickle.load(f)
 
 for i in range(1, 6):

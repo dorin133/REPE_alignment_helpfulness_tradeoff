@@ -8,7 +8,7 @@ from transformers import AutoTokenizer, pipeline, AutoModelForCausalLM
 from tqdm import tqdm
 import numpy as np
 from repe.rep_control_reading_vec import WrappedReadingVecModel
-import fairness_utils 
+import fairness_utils_ver2 
 import pandas as pd
 from repe import repe_pipeline_registry
 repe_pipeline_registry()
@@ -21,9 +21,9 @@ for model_name in ["Llama-2-13b", "Llama-2-13b-chat"]:
     ################################# load model
     model_name_or_path_chat = f"../../llama2/{model_name}/"
     # model_name_or_path_chat = 'meta-llama/Llama-2-13b-chat-hf'
-    model = AutoModelForCausalLM.from_pretrained(model_name_or_path_chat, torch_dtype=torch.float16, device_map="auto", token='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').eval() 
+    model = AutoModelForCausalLM.from_pretrained(model_name_or_path_chat, torch_dtype=torch.float16, device_map="auto", token=True).eval() 
     use_fast_tokenizer = "LlamaForCausalLM" not in model.config.architectures
-    tokenizer = AutoTokenizer.from_pretrained(model_name_or_path_chat, use_fast=use_fast_tokenizer, padding_side="left", legacy=False, token='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')
+    tokenizer = AutoTokenizer.from_pretrained(model_name_or_path_chat, use_fast=use_fast_tokenizer, padding_side="left", legacy=False, token=True)
     tokenizer.pad_token_id = 0 if tokenizer.pad_token_id is None else tokenizer.pad_token_id
     tokenizer.bos_token_id = 1
     print("load model finished!")
@@ -42,9 +42,9 @@ for model_name in ["Llama-2-13b", "Llama-2-13b-chat"]:
     assistant_tag =  "[/INST]"
     
     if model_name == 'Llama-2-13b':
-        bias_data = fairness_utils.bias_dataset_for_alignment(user_tag=user_tag, assistant_tag=assistant_tag)
+        bias_data = fairness_utils_ver2.bias_dataset_for_alignment(user_tag=user_tag, assistant_tag=assistant_tag, alignment=True)
     else:
-        bias_data = fairness_utils.bias_dataset_for_misalignment(user_tag=user_tag, assistant_tag=assistant_tag)
+        bias_data = fairness_utils_ver2.bias_dataset_for_alignment(user_tag=user_tag, assistant_tag=assistant_tag, alignment=False)
 
     ################# prepare test dataaaa
 
@@ -97,7 +97,7 @@ for model_name in ["Llama-2-13b", "Llama-2-13b-chat"]:
         wrapped_model.reset()
         wrapped_model.set_controller(layer_id, activations, block_name)
 
-        behavior_bias = fairness_utils.feed_dialog_behavior(model, model_name, tokenizer, bias_instructions, bias_instructions_raw)
+        behavior_bias = fairness_utils_ver2.feed_dialog_behavior(model, model_name, tokenizer, bias_instructions, bias_instructions_raw)
         # behavior_unbias = fairness_utils.feed_dialog_behavior(wrapped_model, tokenizer, unbias_instructions)
         
         behavior_bias_mean[coeff] = sum(behavior_bias)/len(behavior_bias)
