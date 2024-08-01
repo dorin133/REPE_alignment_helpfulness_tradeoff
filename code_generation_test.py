@@ -17,7 +17,7 @@ random.seed(42)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def sample_model(model, tokenizer, question, num_samples=32, batch_size=2):
-    question_template = '''[INST]{question} Answer: [\INST]'''
+    question_template = '''[INST]{user_prompt} Answer: [\INST]'''
     prompt = question_template.format(user_prompt=question['prompt'])
     q_encoding = tokenizer.encode_plus(prompt, return_tensors="pt", padding=True)
     input_ids = q_encoding['input_ids'].to(device)
