@@ -1,5 +1,5 @@
 import random
-from AdvBench.main import get_contrast_data
+# from AdvBench.main import get_contrast_data
 from tqdm import tqdm
 import torch
 import os
@@ -177,7 +177,7 @@ def reading_vec_dataset_Q_and_A():
     raw_test_data = [template_raw.format(instruction=s) for s in test_data]
     test_data_by_template = [template.format(instruction=s) for s in test_data]
 
-    if not os.path.exists('../../data/mmlu_plots/train_data_Q_and_A/train_data_Q_and_A_harm_only.json'):
+    if not os.path.exists('./train_data_Q_and_A_harm_only.json'):
         model_name_or_path_chat = "../../llama2/Llama-2-13b-chat/"
         model_chat = AutoModelForCausalLM.from_pretrained(model_name_or_path_chat, torch_dtype=torch.float16, device_map="auto", token=True).eval() 
         use_fast_tokenizer = "LlamaForCausalLM" not in model_chat.config.architectures
@@ -228,7 +228,7 @@ def reading_vec_dataset_Q_and_A():
         with open(f'../../data/mmlu_plots/train_data_Q_and_A/train_data_Q_and_A_harm_only.json', 'w') as file:
             json.dump(train_data_Q_and_A, file)    
     else:
-        with open(f'../../data/mmlu_plots/train_data_Q_and_A/train_data_Q_and_A_harm_only.json', 'r') as file:
+        with open(f'./train_data_Q_and_A_harm_only.json', 'r') as file:
             train_data_Q_and_A = json.load(file)
 
     return train_data_Q_and_A, train_labels, test_data_by_template, raw_test_data
@@ -331,4 +331,3 @@ def load_pca_vectors_and_signs(behavior_name):
 
     
 
-    
