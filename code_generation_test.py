@@ -101,7 +101,8 @@ for i, coeff in enumerate(x):
     wrapped_model.reset()
     wrapped_model.set_controller(layer_id, activations, block_name)
 
-    for question in human_eval_dict:
+    for key in human_eval_dict:
+        question = human_eval_dict[key]
         if coeff not in generation_dict:
             generation_dict[coeff] = dict()
         generation_dict[coeff][question['task_id']] \
