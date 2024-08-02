@@ -92,7 +92,10 @@ wrapped_model.wrap_block(layer_id, block_name=block_name)
 x = [round(x,1) for x in np.arange(-10, 10, 1)]
 generation_dict = dict()
 
+generation_path = 'code_generations_results_02_08'
+
 for i, coeff in enumerate(x):
+    print(coeff)
     activations = {}
     for layer in layer_id:
         v = torch.tensor(pca_vectors[layer]*pca_signs[layer][0])
@@ -106,8 +109,10 @@ for i, coeff in enumerate(x):
         if coeff not in generation_dict:
             generation_dict[coeff] = dict()
         generation_dict[coeff][question['task_id']] \
-            = sample_model(model, tokenizer, question, num_samples=32, batch_size=2)
+            = sample_model(wrapped_model, tokenizer, question, num_samples=32, batch_size=2)
+
+    with open(generation_path, 'w') as file:
+        json.dump(generation_dict, file)
 
 
-with open(f'code_generations_results', 'w') as file:
-    json.dump(generation_dict, file)
+
