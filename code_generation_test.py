@@ -109,7 +109,7 @@ for i, coeff in enumerate(x):
         if coeff not in generation_dict:
             generation_dict[coeff] = dict()
         generation_dict[coeff][question['task_id']] \
-            = sample_model(wrapped_model, tokenizer, question, num_samples=32, batch_size=2)
+            = sample_model(wrapped_model, tokenizer, question, num_samples=32, batch_size=8)
 
     with open(generation_path, 'w') as file:
         json.dump(generation_dict, file)
