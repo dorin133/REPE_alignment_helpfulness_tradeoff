@@ -11,6 +11,7 @@ import harmfulness_utils_ver2
 from datasets import load_dataset
 from repe import repe_pipeline_registry
 import random
+import pdb
 repe_pipeline_registry()
 
 random.seed(42)
@@ -109,7 +110,7 @@ for i, coeff in enumerate(x):
         if coeff not in generation_dict:
             generation_dict[coeff] = dict()
         generation_dict[coeff][question['task_id']] \
-            = sample_model(wrapped_model, tokenizer, question, num_samples=16, batch_size=4)
+            = sample_model(model, tokenizer, question, num_samples=16, batch_size=4)
 
     with open(generation_path, 'w') as file:
         json.dump(generation_dict, file)
