@@ -28,7 +28,7 @@ def sample_model(model, tokenizer, question, num_samples=32, batch_size=2):
     all_answers = []
     for j in range(num_batches):
         with torch.inference_mode():
-            outputs = model.generate(input_ids, max_new_tokens=2048, temperature=1.0, do_sample=True,
+            outputs = model.generate(input_ids, max_new_tokens=1800, temperature=1.0, do_sample=True,
                                      top_p=0.95, attention_mask=attn_mask,
                                      return_dict_in_generate=True,
                                      pad_token_id=tokenizer.pad_token_id, num_return_sequences=batch_size)
