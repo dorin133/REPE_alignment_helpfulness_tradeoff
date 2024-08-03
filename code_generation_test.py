@@ -106,11 +106,12 @@ for i, coeff in enumerate(x):
     wrapped_model.set_controller(layer_id, activations, block_name)
 
     for key in filtered_human_eval_dict:
+        print(key)
         question = filtered_human_eval_dict[key]
         if coeff not in generation_dict:
             generation_dict[coeff] = dict()
         generation_dict[coeff][question['task_id']] \
-            = sample_model(model, tokenizer, question, num_samples=16, batch_size=4)
+            = sample_model(model, tokenizer, question, num_samples=16, batch_size=8)
 
     with open(generation_path, 'w') as file:
         json.dump(generation_dict, file)
