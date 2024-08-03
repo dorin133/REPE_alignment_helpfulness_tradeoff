@@ -19,8 +19,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 question_template = \
 """[INST] <<SYS>>
-You are a helpful, respectful and honest assistant. You will be given python functions to complete.
-Complete the functions correctly. Separate the code from the rest of your message.
+You are a helpful, respectful and honest assistant. You will be given a python function to complete.
+Complete the function correctly. Separate the code of the function from the rest of your message.
 Avoid unnecessary indentation in your answer. Only give one answer. 
 <</SYS>>
 {user_prompt} [/INST]"""
