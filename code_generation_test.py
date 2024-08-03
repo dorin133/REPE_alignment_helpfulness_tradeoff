@@ -17,8 +17,16 @@ repe_pipeline_registry()
 random.seed(42)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+question_template = \
+"""[INST] <<SYS>>
+You are a helpful, respectful and honest assistant. You will be given python functions to complete.
+Complete the functions correctly. Separate the code from the rest of your message.
+Avoid unnecessary indentation in your answer. Only give one answer. 
+<</SYS>>
+{user_prompt} [/INST]"""
+
+
 def sample_model(model, tokenizer, question, num_samples=32, batch_size=2):
-    question_template = '''[INST]{user_prompt} Answer: [\INST]'''
     prompt = question_template.format(user_prompt=question['prompt'])
     q_encoding = tokenizer.encode_plus(prompt, return_tensors="pt", padding=True)
     input_ids = q_encoding['input_ids'].to(device)
@@ -111,7 +119,7 @@ for i, coeff in enumerate(x):
         if coeff not in generation_dict:
             generation_dict[coeff] = dict()
         generation_dict[coeff][question['task_id']] \
-            = sample_model(model, tokenizer, question, num_samples=16, batch_size=8)
+            = sample_model(model, tokenizer, question, num_samples=16, batch_size=4)
 
     with open(generation_path, 'w') as file:
         json.dump(generation_dict, file)
