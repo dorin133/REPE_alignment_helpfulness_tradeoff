@@ -58,8 +58,8 @@ print("load model finished!")
 
 human_eval_data = load_dataset("openai/openai_humaneval")
 human_eval_dict = {q['task_id']: q for q in human_eval_data['test']}
-human_eval_dict = dict(random.sample(human_eval_dict.items(), 10))
-
+wanted_q = ['HumanEval/3', 'HumanEval/4', 'HumanEval/7', 'HumanEval/8', 'HumanEval/12', 'HumanEval/22', 'HumanEval/27', 'HumanEval/28', 'HumanEval/29', 'HumanEval/30']
+filtered_human_eval_dict = {q['task_id']: q for q in human_eval_data['test'] if q['task_id'] in wanted_q}
 
 ################################# load the llama2 model vocabulary
 vocabulary = tokenizer.get_vocab()
@@ -89,10 +89,10 @@ wrapped_model.unwrap()
 wrapped_model.wrap_block(layer_id, block_name=block_name)
 
 #test model on dataset for various norms of injected vectors
-x = [round(x,1) for x in np.arange(-10, 10, 1)]
+x = [float(round(x,1)) for x in np.arange(-6, 0, 0.5)]
 generation_dict = dict()
 
-generation_path = 'code_generations_results_02_08'
+generation_path = 'code_generations_results_03_08_negative.json'
 
 for i, coeff in enumerate(x):
     print(coeff)
@@ -104,15 +104,12 @@ for i, coeff in enumerate(x):
     wrapped_model.reset()
     wrapped_model.set_controller(layer_id, activations, block_name)
 
-    for key in human_eval_dict:
-        question = human_eval_dict[key]
+    for key in filtered_human_eval_dict:
+        question = filtered_human_eval_dict[key]
         if coeff not in generation_dict:
             generation_dict[coeff] = dict()
         generation_dict[coeff][question['task_id']] \
-            = sample_model(wrapped_model, tokenizer, question, num_samples=32, batch_size=8)
+            = sample_model(wrapped_model, tokenizer, question, num_samples=16, batch_size=4)
 
     with open(generation_path, 'w') as file:
         json.dump(generation_dict, file)
-
-
-
