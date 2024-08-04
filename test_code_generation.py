@@ -121,6 +121,23 @@ def extract_function(mixed_string, function_name):
     return extract_line_range(mixed_string, def_idx_fk, end_idx_fk)
 
 
+def extract_function_2(mixed_string, function_name):
+    # Pattern to match function definition, including code blocks
+    pattern = rf"```\s*\n*def\s+{re.escape(function_name)}\s*\([^)]*\):(?:(?!\n```)[\s\S])*\n```"
+
+    # Search for the function in the mixed string
+    match = re.search(pattern, mixed_string, re.MULTILINE)
+
+    if match:
+        # Extract just the function code from within the code block
+        function_code = match.group(0)
+        function_code = re.sub(r'^```\s*\n*', '', function_code)  # Remove opening ```
+        function_code = re.sub(r'\n*```\s*$', '', function_code)  # Remove closing ```
+        return function_code.strip()
+    else:
+        return None
+
+
 def test_human_eval_dataset(all_generations, data_dict):
 
     results = dict()
@@ -137,17 +154,17 @@ def test_human_eval_dataset(all_generations, data_dict):
                 curr_answer = curr_generation_batch[i]
                 curr_imports = get_import_lines(curr_answer)
                 curr_function_code = extract_function(curr_answer + "\naaa", curr_problem['entry_point'])
-                # if coeff == '0':
-                #     pdb.set_trace()
                 if curr_function_code is None:
-                    continue
+                    curr_function_code = extract_function_2(curr_answer, curr_problem['entry_point'])
+                    if curr_function_code is None:
+                        continue
                 curr_code_with_imports = f"{curr_imports}\n{curr_function_code}"
                 is_pass = test_humaneval_function(curr_problem, curr_code_with_imports)
                 full_success_list.append(is_pass)
 
             success_perc = np.sum(full_success_list) / len(curr_generation_batch)
             success_perc_list.append(success_perc)
-        results[int(coeff)] = np.average(success_perc_list)
+        results[float(coeff)] = np.average(success_perc_list)
     return results
 
 
@@ -175,9 +192,9 @@ def plot_results(results):
 def main():
     human_eval_data = load_dataset("openai/openai_humaneval")
     human_eval_dict = {q['task_id']: q for q in human_eval_data['test']}
-    gen1 = open('code_generations_results_02_08_negative_coeff')
+    gen1 = open('code_generations_results_03_08_negative.json')
     gen1 = json.load(gen1)
-    gen2 = open('code_generations_results_02_08_positive_coeff')
+    gen2 = open('code_generations_results_03_08_positive.json')
     gen2 = json.load(gen2)
     all_gen = gen1 | gen2
 
@@ -185,6 +202,9 @@ def main():
     print(results)
 
     plt.plot(results.keys(), results.values())
+    plt.xlabel('coefficients')
+    plt.ylabel('success rate')
+    plt.title('Human eval success rate vs. REPE coefficients')
     plt.show()
 
 

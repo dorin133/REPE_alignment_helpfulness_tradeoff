@@ -98,10 +98,10 @@ wrapped_model.unwrap()
 wrapped_model.wrap_block(layer_id, block_name=block_name)
 
 #test model on dataset for various norms of injected vectors
-x = [float(round(x,1)) for x in np.arange(-6, 0, 0.5)]
+x = [float(round(x,1)) for x in np.arange(-1.4, 0, 0.2)]
 generation_dict = dict()
 
-generation_path = 'code_generations_results_03_08_negative.json'
+generation_path = 'code_generations_results_04_08_negative.json'
 
 for i, coeff in enumerate(x):
     print(coeff)
@@ -119,7 +119,7 @@ for i, coeff in enumerate(x):
         if coeff not in generation_dict:
             generation_dict[coeff] = dict()
         generation_dict[coeff][question['task_id']] \
-            = sample_model(model, tokenizer, question, num_samples=16, batch_size=4)
+            = sample_model(model, tokenizer, question, num_samples=32, batch_size=4)
 
     with open(generation_path, 'w') as file:
         json.dump(generation_dict, file)
