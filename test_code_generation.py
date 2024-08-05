@@ -1,35 +1,15 @@
 from datasets import load_dataset
-import traceback
 import json
 import re
 import numpy as np
 import matplotlib.pyplot as plt
-import sys
-import signal
-import ast
-import astor
-import multiprocessing
-import pdb
-import statistics
-from statistics import mean
-from typing import List, Optional, Tuple, Any
-from unittest import TestCase
-import statistics as stats
-
 from code_runner import test_humaneval_function
+import pdb
 
 
 class DummyOutput:
     def write(self, text):
         pass
-
-
-def timeout_handler(signum, frame):
-    raise TimeoutError("Execution timed out!")
-
-
-# Set the timeout handler for the SIGALRM signal
-signal.signal(signal.SIGALRM, timeout_handler)
 
 
 def parser_code(model_response):
@@ -73,8 +53,7 @@ def extract_line_range(text, start_line, end_line):
 
 def extract_function(mixed_string, function_name, starting_index=0):
     if starting_index is None:
-        return  None, None
-    # mixed_string = fix_return_with_no_indent(mixed_string)
+        return None, None
     def_idx_fk = find_first_def_line(mixed_string, starting_index)
     if def_idx_fk == -1:
         return None, None
@@ -85,17 +64,12 @@ def extract_function(mixed_string, function_name, starting_index=0):
 
 
 def extract_function_2(mixed_string, function_name):
-    # Pattern to match function definition, including code blocks
     pattern = rf"```\s*\n*def\s+{re.escape(function_name)}\s*\([^)]*\):(?:(?!\n```)[\s\S])*\n```"
-
-    # Search for the function in the mixed string
     match = re.search(pattern, mixed_string, re.MULTILINE)
-
     if match:
-        # Extract just the function code from within the code block
         function_code = match.group(0)
-        function_code = re.sub(r'^```\s*\n*', '', function_code)  # Remove opening ```
-        function_code = re.sub(r'\n*```\s*$', '', function_code)  # Remove closing ```
+        function_code = re.sub(r'^```\s*\n*', '', function_code)
+        function_code = re.sub(r'\n*```\s*$', '', function_code)
         return function_code.strip()
     else:
         return None
@@ -106,9 +80,9 @@ def test_human_eval_dataset(all_generations, data_dict):
     results = dict()
     for coeff in all_generations:
         curr_generations = all_generations[coeff]
+        # remove problems that always have a 0 percent success rate
         curr_generations.pop('HumanEval/3')
         curr_generations.pop('HumanEval/27')
-        curr_generations.pop('HumanEval/28')
         success_perc_list = []
         for key in curr_generations:
             print(key)
@@ -119,13 +93,14 @@ def test_human_eval_dataset(all_generations, data_dict):
             for i in range(len(curr_generation_batch)):
                 curr_answer = curr_generation_batch[i]
                 curr_imports = get_import_lines(curr_answer)
+                # try a few function extraction methods
                 function_codes_to_try = []
                 option1, index = extract_function(curr_answer + "\naaa", curr_problem['entry_point'])
-                function_codes_to_try.append(option1)
                 option2, _ = extract_function(curr_answer + "\naaa", curr_problem['entry_point'], index)
-                option_3 = extract_function_2(curr_answer, curr_problem['entry_point'])
+                option3 = extract_function_2(curr_answer, curr_problem['entry_point'])
+                function_codes_to_try.append(option1)
                 function_codes_to_try.append(option2)
-                function_codes_to_try.append(option_3)
+                function_codes_to_try.append(option3)
                 for curr_function_code in function_codes_to_try:
                     if curr_function_code is None:
                         is_pass = False
@@ -138,6 +113,7 @@ def test_human_eval_dataset(all_generations, data_dict):
 
             success_perc = np.sum(full_success_list) / len(curr_generation_batch)
             success_perc_list.append(success_perc)
+
         results[float(coeff)] = np.average(success_perc_list), np.std(success_perc_list) / len(success_perc_list)**0.5
     return results
 
@@ -153,9 +129,9 @@ def plot_results(keys, averages, stds):
     #                               markeredgecolor='black', markerfacecolor='blue')
 
     # Customize the plot
-    plt.xlabel('coeff')
+    plt.xlabel('coefficients')
     plt.ylabel('mean success rate')
-    plt.title('Success Rate vs. Coeff')
+    plt.title('Human eval success rate vs. REPE coefficients')
     plt.grid(True, linestyle='--', alpha=0.7)
 
     # Show the plot
@@ -167,7 +143,14 @@ def main():
     human_eval_data = load_dataset("openai/openai_humaneval")
     human_eval_dict = {q['task_id']: q for q in human_eval_data['test']}
     all_gen_dict = {}
-    gens_paths = ['code_generations_results_04_08_negative_more.json', 'code_generations_results_04_08_positive_more.json', 'code_generations_results_04_08_negative.json', 'code_generations_results_04_08_positive.json', 'code_generations_results_03_08_negative.json', 'code_generations_results_03_08_positive.json',]
+    # read all generations
+    gens_paths = ['code_generations/code_generations_results_04_08_negative_more.json',
+                  'code_generations/code_generations_results_04_08_positive_more.json',
+                  'code_generations/code_generations_results_04_08_negative.json',
+                  'code_generations/code_generations_results_04_08_positive.json',
+                  'code_generations/code_generations_results_03_08_negative.json',
+                  'code_generations/code_generations_results_03_08_positive.json',
+                  'code_generations/code_generations_results_05_08_more_q_3.json']
     for path in gens_paths:
         curr_gen = open(path)
         curr_gen = json.load(curr_gen)
@@ -183,17 +166,12 @@ def main():
 
     results = test_human_eval_dataset(all_gen_dict, human_eval_dict)
     print(results)
-
+    results = {key: val for key, val in results.items() if abs(key) <= 3}
     results = dict(sorted(results.items()))
     sorted_keys = list(results.keys())
     avgs = [key[0] for key in results.values()]
     stds = [key[1] for key in results.values()]
     plot_results(sorted_keys, avgs, stds)
-    # plt.scatter(results.keys(), results.values())
-    # plt.xlabel('coefficients')
-    # plt.ylabel('success rate')
-    # plt.title('Human eval success rate vs. REPE coefficients')
-    # plt.show()
 
 
 if __name__ == '__main__':

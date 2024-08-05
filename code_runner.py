@@ -1,21 +1,7 @@
-from datasets import load_dataset
 import traceback
-import json
-import re
-import numpy as np
-import matplotlib.pyplot as plt
-import sys
 import signal
-import ast
-import astor
-import multiprocessing
-import pdb
-import statistics
-from statistics import mean
-from typing import List, Optional, Tuple, Any
-from unittest import TestCase
-import statistics as stats
 
+# common imports
 imports = """
 from numpy import concatenate, product, multiply
 import json
@@ -25,8 +11,17 @@ import statistics
 from statistics import mean
 from typing import List, Optional, Tuple, Any
 import statistics as stats
+import hashlib
 
 """
+
+
+def timeout_handler(signum, frame):
+    raise TimeoutError("Execution timed out!")
+
+
+# Set the timeout handler for the SIGALRM signal
+signal.signal(signal.SIGALRM, timeout_handler)
 
 
 def test_humaneval_function(humaneval_entry: dict, model_output: str):
@@ -53,12 +48,12 @@ def test_humaneval_function(humaneval_entry: dict, model_output: str):
         local_dict = {}
         # Define the function in the local scope
         execute_with_timeout(imports + model_output, 5, local_dict)
-        execute_with_timeout(imports + humaneval_entry['test'], 5, local_dict)
+        execute_with_timeout(humaneval_entry['test'], 5, local_dict)
 
         # Extract the entry point function name
         entry_point = humaneval_entry['entry_point']
 
-        execute_with_timeout(imports + f"check({entry_point})", 5, local_dict)
+        execute_with_timeout(f"check({entry_point})", 5, local_dict)
 
         return True
 
