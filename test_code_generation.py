@@ -76,13 +76,13 @@ def extract_function_2(mixed_string, function_name):
 
 
 def test_human_eval_dataset(all_generations, data_dict):
-
+    problems_to_remove = ['HumanEval/3', 'HumanEval/27', 'HumanEval/149', 'HumanEval/150', 'HumanEval/157']
     results = dict()
     for coeff in all_generations:
         curr_generations = all_generations[coeff]
         # remove problems that always have a 0 percent success rate
-        curr_generations.pop('HumanEval/3')
-        curr_generations.pop('HumanEval/27')
+        for p in problems_to_remove:
+            del curr_generations[p]
         success_perc_list = []
         for key in curr_generations:
             print(key)
@@ -150,7 +150,10 @@ def main():
                   'code_generations/code_generations_results_04_08_positive.json',
                   'code_generations/code_generations_results_03_08_negative.json',
                   'code_generations/code_generations_results_03_08_positive.json',
-                  'code_generations/code_generations_results_05_08_more_q_3.json']
+                  'code_generations/code_generations_results_05_08_more_q_3.json',
+                  'code_generations/code_generations_results_05_08_more_q_4.json',
+                  'code_generations/code_generations_results_05_08_more_q_5.json',
+                  ]
     for path in gens_paths:
         curr_gen = open(path)
         curr_gen = json.load(curr_gen)
@@ -164,9 +167,10 @@ def main():
                     else:
                         all_gen_dict[key][q_key] += curr_gen[key][q_key]
 
+    # this is the range we are interested in (it's all 0 out of it)
+    all_gen_dict = {key: val for key, val in all_gen_dict.items() if abs(float(key)) <= 3}
     results = test_human_eval_dataset(all_gen_dict, human_eval_dict)
     print(results)
-    results = {key: val for key, val in results.items() if abs(key) <= 3}
     results = dict(sorted(results.items()))
     sorted_keys = list(results.keys())
     avgs = [key[0] for key in results.values()]
