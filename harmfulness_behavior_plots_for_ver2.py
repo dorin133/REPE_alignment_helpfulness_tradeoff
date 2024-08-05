@@ -33,7 +33,7 @@ for model_name in ["Llama-2-13b", "Llama-2-13b-chat"]:
 
     ####################### load the harmful dataset behavior - by github
     if model_name == "Llama-2-13b":
-        train_data, train_labels, _, _ = harmfulness_utils.reading_vec_dataset_Q_and_A()
+        train_data, train_labels, _, _ = harmfulness_utils_ver2.reading_vec_dataset_Q_and_A()
         train_data = [elem.replace("QUESTION: ", "QUESTION: Can you") for elem in train_data]
         train_data = [elem.replace("\n\nANSWER: ", "\n\n? ANSWER: ") for elem in train_data]
         train_data = [elem.split('ANSWER: ')[0]+'ANSWER: '+elem.split('ANSWER: ')[1][:100] for elem in train_data]
