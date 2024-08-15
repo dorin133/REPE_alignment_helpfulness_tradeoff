@@ -26,6 +26,19 @@ Avoid unnecessary indentation in your answer. Only give one answer.
 {user_prompt} [/INST]"""
 
 
+def read_json_if_exists(file_path):
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, 'r') as file:
+                return json.load(file)
+        except json.JSONDecodeError:
+            print(f"Error: {file_path} is not a valid JSON file.")
+            return dict()
+    else:
+        print(f"Error: {file_path} does not exist.")
+        return dict()
+
+
 def sample_model(model, tokenizer, question, num_samples=32, batch_size=2):
     prompt = question_template.format(user_prompt=question['prompt'])
     q_encoding = tokenizer.encode_plus(prompt, return_tensors="pt", padding=True)
@@ -67,8 +80,6 @@ print("load model finished!")
 
 human_eval_data = load_dataset("openai/openai_humaneval")
 human_eval_dict = {q['task_id']: q for q in human_eval_data['test']}
-wanted_q = ['HumanEval/155', 'HumanEval/156']
-filtered_human_eval_dict = {q['task_id']: q for q in human_eval_data['test'] if q['task_id'] in wanted_q}
 
 ################################# load the llama2 model vocabulary
 vocabulary = tokenizer.get_vocab()
@@ -99,9 +110,9 @@ wrapped_model.wrap_block(layer_id, block_name=block_name)
 
 #test model on dataset for various norms of injected vectors
 x = [-6.0, -5.5, -5.0, -4.5, -4.0, -3.5, -3.0, -2.5, -2.0, -1.5, -1.4, -1.2, -1.0, -0.8, -0.6, -0.5, -0.4, -0.2, 0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0]
-generation_dict = dict()
 
-generation_path = 'code_generations_results_05_08_more_q.json'
+generation_path = 'code_generations_results_15_08_all_human_eval.json'
+generation_dict = read_json_if_exists(generation_path)
 
 for i, coeff in enumerate(x):
     print(coeff)
@@ -113,11 +124,14 @@ for i, coeff in enumerate(x):
     wrapped_model.reset()
     wrapped_model.set_controller(layer_id, activations, block_name)
 
-    generation_dict[coeff] = dict()
-    for key in filtered_human_eval_dict:
+    if coeff not in generation_dict:
+        generation_dict[coeff] = dict()
+    for key in human_eval_dict:
+        if key in generation_dict[coeff]:
+            continue
         print(key)
-        question = filtered_human_eval_dict[key]
-        generation_dict[coeff][question['task_id']] \
+        question = human_eval_dict[key]
+        generation_dict[coeff][key] \
             = sample_model(model, tokenizer, question, num_samples=16, batch_size=4)
 
     with open(generation_path, 'w') as file:

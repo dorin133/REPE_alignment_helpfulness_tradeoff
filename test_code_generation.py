@@ -81,8 +81,8 @@ def test_human_eval_dataset(all_generations, data_dict):
     for coeff in all_generations:
         curr_generations = all_generations[coeff]
         # remove problems that always have a 0 percent success rate
-        for p in problems_to_remove:
-            del curr_generations[p]
+        # for p in problems_to_remove:
+        #     del curr_generations[p]
         success_perc_list = []
         for key in curr_generations:
             print(key)
