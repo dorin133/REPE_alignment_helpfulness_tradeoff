@@ -26,10 +26,24 @@ def filter_function(example):
     return example['is_response_0_safe'] != example['is_response_1_safe']
 
 
+def preprocess_function(example):
+    if example['is_response_0_safe']:
+        example['chosen'] = example['response_0']
+        example['rejected'] = example['response_1']
+    else:
+        example['chosen'] = example['response_1']
+        example['rejected'] = example['response_0']
+    return example
+
+
 dataset = load_dataset("PKU-Alignment/PKU-SafeRLHF")
 train_dataset, test_dataset = dataset['train'], dataset['test']
 train_dataset = train_dataset.filter(filter_function)
 test_dataset = test_dataset.filter(filter_function)
+
+train_dataset = train_dataset.map(preprocess_function)
+test_dataset = test_dataset.map(preprocess_function)
+
 
 peft_config = LoraConfig(
     task_type="CAUSAL_LM",
@@ -46,11 +60,6 @@ model.to(device)
 batch_size = 8
 per_device_batch_size = batch_size // 2
 num_epochs = 5
-
-# need this to fix padding
-data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
-train_dataloader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size, collate_fn=data_collator)
-eval_dataloader = DataLoader(test_dataset, batch_size=batch_size, collate_fn=data_collator)
 
 total_steps = math.ceil((len(list(train_dataset)) * num_epochs) / batch_size)
 save_steps = math.ceil(total_steps / 12)
@@ -70,7 +79,8 @@ dpo_trainer = DPOTrainer(
     model=model,
     args=training_args,
     beta=0.1,
-    train_dataset=dataset,
+    train_dataset=train_dataset,
+    eval_dataset=test_dataset,
     tokenizer=tokenizer,
     max_prompt_length=512,
     max_length=2048,
