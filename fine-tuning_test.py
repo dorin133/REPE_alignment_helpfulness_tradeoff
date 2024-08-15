@@ -55,7 +55,7 @@ peft_config = LoraConfig(
 model = get_peft_model(model, peft_config)
 model.to(device)
 
-batch_size = 8
+batch_size = 4
 per_device_batch_size = batch_size // 2
 num_epochs = 5
 
