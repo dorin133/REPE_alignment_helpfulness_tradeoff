@@ -64,6 +64,7 @@ save_steps = math.ceil(total_steps / 12)
 
 training_args = DPOConfig(
     output_dir="./lora_finetuned_model",
+    overwrite_output_dir=True,
     num_train_epochs=num_epochs,
     per_device_train_batch_size=per_device_batch_size,
     per_device_eval_batch_size=per_device_batch_size,

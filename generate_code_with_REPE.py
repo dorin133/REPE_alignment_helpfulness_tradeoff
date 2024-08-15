@@ -126,7 +126,7 @@ for i, coeff in enumerate(x):
 
     if coeff not in generation_dict:
         generation_dict[coeff] = dict()
-    for key in human_eval_dict:
+    for j, key in enumerate(human_eval_dict):
         if key in generation_dict[coeff]:
             continue
         print(key)
@@ -134,5 +134,6 @@ for i, coeff in enumerate(x):
         generation_dict[coeff][key] \
             = sample_model(model, tokenizer, question, num_samples=16, batch_size=4)
 
-    with open(generation_path, 'w') as file:
-        json.dump(generation_dict, file)
+        if j % 10 == 0:
+            with open(generation_path, 'w') as file:
+                json.dump(generation_dict, file)
