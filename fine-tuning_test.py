@@ -10,19 +10,6 @@ import math
 import os
 
 
-class CustomDPOTrainer(DPOTrainer):
-    def save_model(self, output_dir=None, _internal_call=False):
-        if output_dir is None:
-            output_dir = self.args.output_dir
-        os.makedirs(output_dir, exist_ok=True)
-
-        # Save only the LoRA parameters
-        self.model.save_pretrained(output_dir)
-
-        # Save tokenizer
-        self.tokenizer.save_pretrained(output_dir)
-
-
 models_dir = '/cs/labs/shashua/binyamin/models/'
 model_path = os.path.join(models_dir, "Meta-Llama-3.1-8B")
 model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16,
@@ -49,7 +36,7 @@ peft_config = LoraConfig(
     r=8,
     lora_alpha=32,
     lora_dropout=0.1,
-    target_modules=["c_attn", "c_proj"]
+    # target_modules=["q_proj", "k_proj", "v_proj"]
 )
 
 model = get_peft_model(model, peft_config)
@@ -79,7 +66,7 @@ training_args = TrainingArguments(
     gradient_accumulation_steps=4,
 )
 
-dpo_trainer = CustomDPOTrainer(
+dpo_trainer = DPOTrainer(
     model=model,
     args=training_args,
     beta=0.1,
@@ -90,4 +77,3 @@ dpo_trainer = CustomDPOTrainer(
 )
 
 dpo_trainer.train()
-
