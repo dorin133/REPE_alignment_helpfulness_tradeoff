@@ -4,7 +4,7 @@ from transformers import (DataCollatorWithPadding, AutoModelForCausalLM, AutoTok
 from torch.utils.data import DataLoader
 from peft import LoraConfig, get_peft_model
 from datasets import load_dataset
-from trl import DPOTrainer
+from trl import DPOTrainer, DPOConfig
 import pdb
 import math
 import os
@@ -55,7 +55,7 @@ eval_dataloader = DataLoader(test_dataset, batch_size=batch_size, collate_fn=dat
 total_steps = math.ceil((len(list(train_dataset)) * num_epochs) / batch_size)
 save_steps = math.ceil(total_steps / 12)
 
-training_args = TrainingArguments(
+training_args = DPOConfig(
     output_dir="./lora_finetuned_model",
     num_train_epochs=num_epochs,
     per_device_train_batch_size=per_device_batch_size,
