@@ -70,7 +70,8 @@ training_args = DPOConfig(
     weight_decay=0.01,
     logging_dir="./logs",
     save_steps=save_steps,  # Save the model every 100 steps
-    gradient_accumulation_steps=4,
+    gradient_accumulation_steps=8,
+    fp16=True,  # Enable mixed precision training
 )
 
 dpo_trainer = DPOTrainer(
