@@ -9,11 +9,10 @@ import pdb
 import math
 import os
 
-
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 models_dir = '/cs/labs/shashua/binyamin/models/'
 model_path = os.path.join(models_dir, "Meta-Llama-3.1-8B")
-model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16,
-                                             device_map="auto", token=True).eval()
+model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16, token=True).eval()
 use_fast_tokenizer = "LlamaForCausalLM" not in model.config.architectures
 tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=use_fast_tokenizer,
                                           padding_side="left", legacy=False, token=True)
@@ -54,7 +53,6 @@ peft_config = LoraConfig(
 )
 
 model = get_peft_model(model, peft_config)
-device = torch.device("cuda")
 model.to(device)
 
 batch_size = 8
