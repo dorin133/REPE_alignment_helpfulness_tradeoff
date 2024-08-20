@@ -84,8 +84,6 @@ dpo_trainer = DPOTrainer(
     train_dataset=train_dataset,
     eval_dataset=test_dataset,
     tokenizer=tokenizer,
-    max_prompt_length=512,
-    max_length=2048,
 )
 
 dpo_trainer.train()
