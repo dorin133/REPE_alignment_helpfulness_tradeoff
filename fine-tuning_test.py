@@ -50,7 +50,7 @@ peft_config = LoraConfig(
     r=2,
     lora_alpha=32,
     lora_dropout=0.1,
-    # target_modules=["q_proj", "k_proj", "v_proj"]
+    target_modules=["q_proj", "k_proj", "v_proj"]
 )
 
 model = get_peft_model(model, peft_config)
