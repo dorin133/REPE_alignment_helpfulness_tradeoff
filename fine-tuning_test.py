@@ -8,6 +8,7 @@ from trl import DPOTrainer, DPOConfig
 import pdb
 import math
 import os
+import wandb
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 models_dir = '/cs/labs/shashua/binyamin/models/'
@@ -86,7 +87,6 @@ dpo_trainer = DPOTrainer(
     train_dataset=train_dataset,
     eval_dataset=test_dataset,
     tokenizer=tokenizer,
-    wandb_log=True,
 )
 
 dpo_trainer.train()
