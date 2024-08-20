@@ -57,7 +57,7 @@ peft_config = LoraConfig(
 model = get_peft_model(model, peft_config)
 model.to(device)
 
-batch_size = 2
+batch_size = 1
 per_device_batch_size = batch_size // 2
 num_epochs = 1
 
@@ -85,7 +85,7 @@ dpo_trainer = DPOTrainer(
     eval_dataset=test_dataset,
     tokenizer=tokenizer,
     max_prompt_length=512,
-    max_length=2048,
+    max_length=1024,
 )
 
 dpo_trainer.train()
