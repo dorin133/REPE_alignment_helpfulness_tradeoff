@@ -58,6 +58,7 @@ peft_config = LoraConfig(
 
 model = get_peft_model(model, peft_config)
 model.to(device)
+dist.init_process_group(backend='nccl')
 model = DDP(model)
 
 batch_size = 2
