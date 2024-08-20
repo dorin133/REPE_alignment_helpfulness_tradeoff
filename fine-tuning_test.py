@@ -9,11 +9,13 @@ import pdb
 import math
 import os
 from accelerate import Accelerator
+from torch.nn.parallel import DistributedDataParallel as DDP
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 models_dir = '/cs/labs/shashua/binyamin/models/'
 model_path = os.path.join(models_dir, "Meta-Llama-3.1-8B")
 model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16, token=True).eval()
+model = DDP(model)
 use_fast_tokenizer = "LlamaForCausalLM" not in model.config.architectures
 tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=use_fast_tokenizer,
                                           padding_side="left", legacy=False, token=True)
@@ -87,8 +89,8 @@ dpo_trainer = DPOTrainer(
     eval_dataset=test_dataset,
     tokenizer=tokenizer,
     max_prompt_length=512,
-    max_length=2048,
-    # peft_config=peft_config,
+    max_length=1024,
+    peft_config=peft_config,
 )
 
 dpo_trainer.train()
