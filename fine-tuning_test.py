@@ -27,13 +27,14 @@ def filter_function(example):
 
 
 def preprocess_function(example):
+    output_dict = {}
     if example['is_response_0_safe']:
-        example['chosen'] = example['response_0']
-        example['rejected'] = example['response_1']
+        output_dict['chosen'] = example['response_0']
+        output_dict['rejected'] = example['response_1']
     else:
-        example['chosen'] = example['response_1']
-        example['rejected'] = example['response_0']
-    return example
+        output_dict['chosen'] = example['response_1']
+        output_dict['rejected'] = example['response_0']
+    return output_dict
 
 
 dataset = load_dataset("PKU-Alignment/PKU-SafeRLHF")
