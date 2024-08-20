@@ -75,6 +75,8 @@ training_args = DPOConfig(
     save_steps=save_steps,  # Save the model every 100 steps
     gradient_accumulation_steps=32,
     fp16=True,  # Enable mixed precision training
+    evaluation_strategy="epoch",
+    remove_unused_columns=False,
 )
 
 dpo_trainer = DPOTrainer(
@@ -84,6 +86,7 @@ dpo_trainer = DPOTrainer(
     train_dataset=train_dataset,
     eval_dataset=test_dataset,
     tokenizer=tokenizer,
+    wandb_log=True,
 )
 
 dpo_trainer.train()
