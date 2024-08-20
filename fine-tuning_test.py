@@ -47,7 +47,7 @@ test_dataset = test_dataset.map(preprocess_function)
 loftq_config = LoftQConfig(loftq_bits=4)
 peft_config = LoraConfig(
     task_type="CAUSAL_LM",
-    r=4,
+    r=2,
     lora_alpha=32,
     lora_dropout=0.1,
     target_modules=["q_proj", "k_proj", "v_proj"],
@@ -84,8 +84,8 @@ dpo_trainer = DPOTrainer(
     train_dataset=train_dataset,
     eval_dataset=test_dataset,
     tokenizer=tokenizer,
-    max_prompt_length=512,
-    max_length=512,
+    max_prompt_length=128,
+    max_length=128,
 )
 
 dpo_trainer.train()
