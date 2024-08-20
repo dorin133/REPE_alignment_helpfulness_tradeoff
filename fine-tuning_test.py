@@ -8,6 +8,7 @@ from trl import DPOTrainer, DPOConfig
 import pdb
 import math
 import os
+from accelerate import Accelerator
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 models_dir = '/cs/labs/shashua/binyamin/models/'
@@ -75,7 +76,8 @@ training_args = DPOConfig(
     fp16=True,  # Enable mixed precision training
 )
 
-dpo_trainer = DPOTrainer(
+accelerator = Accelerator()
+dpo_trainer = accelerator.prepare(DPOTrainer(
     model=model,
     args=training_args,
     beta=0.1,
@@ -84,6 +86,6 @@ dpo_trainer = DPOTrainer(
     tokenizer=tokenizer,
     max_prompt_length=512,
     max_length=2048,
-)
+))
 
 dpo_trainer.train()
