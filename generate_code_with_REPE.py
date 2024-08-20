@@ -109,7 +109,7 @@ wrapped_model.unwrap()
 wrapped_model.wrap_block(layer_id, block_name=block_name)
 
 #test model on dataset for various norms of injected vectors
-x = [-6.0, -5.5, -5.0, -4.5, -4.0, -3.5, -3.0, -2.5, -2.0, -1.5, -1.4, -1.2, -1.0, -0.8, -0.6, -0.5, -0.4, -0.2, 0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0]
+x = [-3.0, -2.5, -2.0, -1.5, -1.4, -1.2, -1.0, -0.8, -0.6, -0.5, -0.4, -0.2, 0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.5, 2.0, 2.5, 3.0]
 
 generation_path = 'code_generations_results_15_08_all_human_eval.json'
 generation_dict_string_keys = read_json_if_exists(generation_path)
