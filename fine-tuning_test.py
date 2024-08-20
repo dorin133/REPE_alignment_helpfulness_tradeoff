@@ -8,9 +8,6 @@ from trl import DPOTrainer, DPOConfig
 import pdb
 import math
 import os
-from accelerate import Accelerator
-from torch.nn.parallel import DistributedDataParallel as DDP
-import torch.distributed as dist
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 models_dir = '/cs/labs/shashua/binyamin/models/'
@@ -50,17 +47,15 @@ test_dataset = test_dataset.map(preprocess_function)
 loftq_config = LoftQConfig(loftq_bits=4)
 peft_config = LoraConfig(
     task_type="CAUSAL_LM",
-    r=1,
+    r=8,
     lora_alpha=32,
     lora_dropout=0.1,
     target_modules=["q_proj", "k_proj", "v_proj"],
-    loftq_config=loftq_config,
+    # loftq_config=loftq_config,
 )
 
 model = get_peft_model(model, peft_config)
 model.to(device)
-dist.init_process_group(backend='nccl')
-model = DDP(model)
 
 batch_size = 2
 per_device_batch_size = batch_size // 2
@@ -78,11 +73,10 @@ training_args = DPOConfig(
     weight_decay=0.01,
     logging_dir="./logs",
     save_steps=save_steps,  # Save the model every 100 steps
-    gradient_accumulation_steps=4,
+    gradient_accumulation_steps=8,
     fp16=True,  # Enable mixed precision training
 )
 
-# accelerator = Accelerator()
 dpo_trainer = DPOTrainer(
     model=model,
     args=training_args,
@@ -91,8 +85,7 @@ dpo_trainer = DPOTrainer(
     eval_dataset=test_dataset,
     tokenizer=tokenizer,
     max_prompt_length=512,
-    max_length=1024,
-    # peft_config=peft_config,
+    max_length=2048,
 )
 
 dpo_trainer.train()
