@@ -46,7 +46,7 @@ test_dataset = test_dataset.map(preprocess_function)
 
 peft_config = LoraConfig(
     task_type="CAUSAL_LM",
-    r=8,
+    r=2,
     lora_alpha=32,
     lora_dropout=0.1,
     # target_modules=["q_proj", "k_proj", "v_proj"]
@@ -71,7 +71,7 @@ training_args = DPOConfig(
     weight_decay=0.01,
     logging_dir="./logs",
     save_steps=save_steps,  # Save the model every 100 steps
-    gradient_accumulation_steps=16,
+    gradient_accumulation_steps=4,
     fp16=True,  # Enable mixed precision training
 )
 
