@@ -10,6 +10,7 @@ import math
 import os
 from accelerate import Accelerator
 from torch.nn.parallel import DistributedDataParallel as DDP
+import torch.distributed as dist
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 models_dir = '/cs/labs/shashua/binyamin/models/'
