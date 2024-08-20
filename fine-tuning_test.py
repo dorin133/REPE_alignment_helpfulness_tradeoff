@@ -55,9 +55,9 @@ peft_config = LoraConfig(
 model = get_peft_model(model, peft_config)
 model.to(device)
 
-batch_size = 4
+batch_size = 2
 per_device_batch_size = batch_size // 2
-num_epochs = 5
+num_epochs = 1
 
 total_steps = math.ceil((len(list(train_dataset)) * num_epochs) / batch_size)
 save_steps = math.ceil(total_steps / 12)
@@ -71,7 +71,7 @@ training_args = DPOConfig(
     weight_decay=0.01,
     logging_dir="./logs",
     save_steps=save_steps,  # Save the model every 100 steps
-    gradient_accumulation_steps=8,
+    gradient_accumulation_steps=16,
     fp16=True,  # Enable mixed precision training
 )
 

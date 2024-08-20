@@ -117,6 +117,7 @@ print("Loaded generation dict with:")
 for key in generation_dict_string_keys:
     for inner_key in generation_dict_string_keys[key]:
         print(f"{key}: {inner_key}")
+print("-"*50)
 generation_dict = {float(key): generation_dict_string_keys[key] for key in generation_dict_string_keys}
 
 for i, coeff in enumerate(x):
@@ -139,6 +140,6 @@ for i, coeff in enumerate(x):
         generation_dict[coeff][key] \
             = sample_model(model, tokenizer, question, num_samples=16, batch_size=4)
 
-        if j % 10 == 0:
+        if j % 5 == 0:
             with open(generation_path, 'w') as file:
                 json.dump(generation_dict, file)

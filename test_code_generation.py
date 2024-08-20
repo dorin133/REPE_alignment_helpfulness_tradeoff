@@ -91,7 +91,7 @@ def test_human_eval_dataset(all_generations, data_dict):
 
             full_success_list = []
             for i in range(len(curr_generation_batch)):
-                curr_answer = curr_generation_batch[i]
+                curr_answer = curr_problem['prompt'] + '\n' + curr_generation_batch[i]
                 curr_imports = get_import_lines(curr_answer)
                 # try a few function extraction methods
                 function_codes_to_try = []
@@ -154,7 +154,7 @@ def main():
     #               'code_generations/code_generations_results_05_08_more_q_4.json',
     #               'code_generations/code_generations_results_05_08_more_q_5.json',
     #               ]
-    gens_paths = ['code_generations/testing_llama_3.1.json']
+    gens_paths = ['llama_3.1']
     for path in gens_paths:
         curr_gen = open(path)
         curr_gen = json.load(curr_gen)
