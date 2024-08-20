@@ -47,11 +47,11 @@ test_dataset = test_dataset.map(preprocess_function)
 loftq_config = LoftQConfig(loftq_bits=4)
 peft_config = LoraConfig(
     task_type="CAUSAL_LM",
-    r=8,
+    r=4,
     lora_alpha=32,
     lora_dropout=0.1,
     target_modules=["q_proj", "k_proj", "v_proj"],
-    # loftq_config=loftq_config,
+    loftq_config=loftq_config,
 )
 
 model = get_peft_model(model, peft_config)
@@ -62,7 +62,7 @@ per_device_batch_size = batch_size // 2
 num_epochs = 1
 
 total_steps = math.ceil((len(list(train_dataset)) * num_epochs) / batch_size)
-save_steps = math.ceil(total_steps / 12)
+save_steps = math.ceil(total_steps / 3)
 
 training_args = DPOConfig(
     output_dir="./lora_finetuned_model",
