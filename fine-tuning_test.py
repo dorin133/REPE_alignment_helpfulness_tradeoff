@@ -47,11 +47,11 @@ test_dataset = test_dataset.map(preprocess_function)
 loftq_config = LoftQConfig(loftq_bits=4)
 peft_config = LoraConfig(
     task_type="CAUSAL_LM",
-    r=2,
+    r=8,
     lora_alpha=32,
     lora_dropout=0.1,
     target_modules=["q_proj", "k_proj", "v_proj"],
-    loftq_config=loftq_config,
+    # loftq_config=loftq_config,
 )
 
 model = get_peft_model(model, peft_config)
@@ -59,7 +59,7 @@ model.to(device)
 
 batch_size = 1
 per_device_batch_size = batch_size // 2
-num_epochs = 1
+num_epochs = 5
 
 total_steps = math.ceil((len(list(train_dataset)) * num_epochs) / batch_size)
 save_steps = math.ceil(total_steps / 3)
@@ -73,7 +73,7 @@ training_args = DPOConfig(
     weight_decay=0.01,
     logging_dir="./logs",
     save_steps=save_steps,  # Save the model every 100 steps
-    gradient_accumulation_steps=8,
+    gradient_accumulation_steps=32,
     fp16=True,  # Enable mixed precision training
 )
 
@@ -84,8 +84,8 @@ dpo_trainer = DPOTrainer(
     train_dataset=train_dataset,
     eval_dataset=test_dataset,
     tokenizer=tokenizer,
-    max_prompt_length=128,
-    max_length=32,
+    max_prompt_length=512,
+    max_length=2048,
 )
 
 dpo_trainer.train()
