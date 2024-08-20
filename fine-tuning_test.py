@@ -76,8 +76,8 @@ training_args = DPOConfig(
     fp16=True,  # Enable mixed precision training
 )
 
-accelerator = Accelerator()
-dpo_trainer = accelerator.prepare(DPOTrainer(
+# accelerator = Accelerator()
+dpo_trainer = DPOTrainer(
     model=model,
     args=training_args,
     beta=0.1,
@@ -86,6 +86,6 @@ dpo_trainer = accelerator.prepare(DPOTrainer(
     tokenizer=tokenizer,
     max_prompt_length=512,
     max_length=2048,
-))
+)
 
 dpo_trainer.train()
