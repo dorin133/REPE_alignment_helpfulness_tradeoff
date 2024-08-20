@@ -86,6 +86,7 @@ dpo_trainer = DPOTrainer(
     tokenizer=tokenizer,
     max_prompt_length=512,
     max_length=2048,
+    peft_config=peft_config,
 )
 
 dpo_trainer.train()
