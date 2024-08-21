@@ -66,18 +66,20 @@ total_steps = math.ceil((len(list(train_dataset)) * num_epochs) / batch_size)
 save_steps = math.ceil(total_steps / 3)
 
 training_args = DPOConfig(
-    output_dir="./lora_finetuned_model",
+    output_dir="./lora_finetuned_model_21_08",
     overwrite_output_dir=True,
     num_train_epochs=num_epochs,
     per_device_train_batch_size=1,
     per_device_eval_batch_size=1,
     weight_decay=0.01,
     logging_dir="./logs",
-    save_steps=save_steps,  # Save the model every 100 steps
-    gradient_accumulation_steps=32,
-    fp16=True,  # Enable mixed precision training
+    save_steps=save_steps,
+    gradient_accumulation_steps=16,
+    fp16=True,
     evaluation_strategy="epoch",
+    eval_steps=0.1,
     remove_unused_columns=False,
+    learning_rate=5e-5,
 )
 
 dpo_trainer = DPOTrainer(
