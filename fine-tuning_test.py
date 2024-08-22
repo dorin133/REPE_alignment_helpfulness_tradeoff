@@ -38,10 +38,11 @@ def preprocess_function(example):
     return output_dict
 
 
+NUM_EXAMPLES = 1000
 dataset = load_dataset("PKU-Alignment/PKU-SafeRLHF")
 train_dataset, test_dataset = dataset['train'], dataset['test']
-train_dataset = train_dataset.filter(filter_function)
-test_dataset = test_dataset.filter(filter_function)
+train_dataset = train_dataset.filter(filter_function).select(range(NUM_EXAMPLES))
+test_dataset = test_dataset.filter(filter_function).select(range(NUM_EXAMPLES))
 
 train_dataset = train_dataset.map(preprocess_function, remove_columns=train_dataset.column_names)
 test_dataset = test_dataset.map(preprocess_function, remove_columns=test_dataset.column_names)
@@ -50,7 +51,7 @@ loftq_config = LoftQConfig(loftq_bits=4)
 peft_config = LoraConfig(
     task_type="CAUSAL_LM",
     r=8,
-    lora_alpha=32,
+    lora_alpha=16,
     lora_dropout=0.01,
     # target_modules=["q_proj", "k_proj", "v_proj"],
     # loftq_config=loftq_config,
@@ -78,11 +79,10 @@ training_args = DPOConfig(
     gradient_accumulation_steps=16,
     fp16=True,
     evaluation_strategy="epoch",
-    eval_steps=0.1,
-    logging_strategy="epoch",
-    logging_steps=0.1,
+    logging_strategy="steps",
+    logging_steps=100,
     remove_unused_columns=False,
-    learning_rate=5e-5,
+    learning_rate=10**(-5),
 )
 
 dpo_trainer = DPOTrainer(
