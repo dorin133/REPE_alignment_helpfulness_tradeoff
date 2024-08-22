@@ -38,11 +38,11 @@ def preprocess_function(example):
     return output_dict
 
 
-NUM_EXAMPLES = 1000
+NUM_EXAMPLES = 1200
 dataset = load_dataset("PKU-Alignment/PKU-SafeRLHF")
 train_dataset, test_dataset = dataset['train'], dataset['test']
 train_dataset = train_dataset.filter(filter_function).select(range(NUM_EXAMPLES))
-test_dataset = test_dataset.filter(filter_function).select(range(NUM_EXAMPLES))
+test_dataset = test_dataset.filter(filter_function).select(range(NUM_EXAMPLES // 2))
 
 train_dataset = train_dataset.map(preprocess_function, remove_columns=train_dataset.column_names)
 test_dataset = test_dataset.map(preprocess_function, remove_columns=test_dataset.column_names)
@@ -62,7 +62,7 @@ model.to(device)
 
 batch_size = 1
 per_device_batch_size = batch_size // 2
-num_epochs = 5
+num_epochs = 10
 
 total_steps = math.ceil((len(list(train_dataset)) * num_epochs) / batch_size)
 save_steps = math.ceil(total_steps / 3)
@@ -80,7 +80,7 @@ training_args = DPOConfig(
     fp16=True,
     evaluation_strategy="epoch",
     logging_strategy="steps",
-    logging_steps=100,
+    logging_steps=0.005,
     remove_unused_columns=False,
     learning_rate=10**(-5),
 )
