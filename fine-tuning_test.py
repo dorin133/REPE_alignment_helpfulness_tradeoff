@@ -68,7 +68,7 @@ total_steps = math.ceil((len(list(train_dataset)) * num_epochs) / batch_size)
 save_steps = math.ceil(total_steps / 3)
 
 training_args = DPOConfig(
-    output_dir="./lora_finetuned_model_21_08",
+    output_dir="./lora_finetuned_model_22_08_ver2",
     overwrite_output_dir=True,
     num_train_epochs=num_epochs,
     per_device_train_batch_size=1,
