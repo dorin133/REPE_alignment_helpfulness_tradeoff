@@ -11,52 +11,76 @@ import torch.nn.functional as F
 import json
 from datasets import load_dataset
 import argparse
+from typing import List, Dict, Any
+
+def parse_comma_separated(value: str):
+    """Parse and validate a comma-separated string containing only 'str1', 'str2', 'str3'."""
+    choices=['high_school_computer_science', 'medical_genetics', 'international_law', 'clinical_knowledge']
+    values = value.split(',')
+    
+    # Validate each item
+    for v in values:
+        if v not in choices:
+            raise argparse.ArgumentTypeError(f"Invalid choice: '{v}'. Choices are {', '.join(choices)}.")
+    return value
 
 class GenerationArgsHelpfulness:
     def __init__(self):
         parser = argparse.ArgumentParser(description="parser for arguments from .py script call")
-        parser.add_argument('--model_name_or_path', default="Llama-2-13b-chat", type=str, help='Path for training_args.output_dir')
+        parser.add_argument('--model_name', default="Llama-2-13b-chat", choices=['Llama-2-13b-chat', 'Llama-2-13b'], type=str, help='Path for the model (huggingface or local)')
+        parser.add_argument('--dataset_mmlu_names', default="international_law", type=parse_comma_separated, help='Path for training_args.output_dir')
         parser.add_argument('--start_coeff', default=-10.0, type=float, help='coeff to start the range of the norm injection of the representation vector')
         parser.add_argument('--end_coeff', default=10.5, type=float, help='coeff to end the range of the norm injection of the representation vector')
         parser.add_argument('--num_instructions', default=64, type=int, help='number of instructions to generate for each prompt')
         parser.add_argument('--num_samples', default=50, type=int, help='number of samples to generate for each instruction')
+        parser.add_argument('--output_dir', default="../../data/harmfulness_experiments_outputs/default_dir", type=str, help='Path for the output directory')
         
         args = parser.parse_args()
-        self.model_name_or_path = args.model_name_or_path
+        self.model_name = args.model_name
+        self.dataset_mmlu_names = args.dataset_mmlu_names
         self.start_coeff = args.start_coeff
         self.end_coeff = args.end_coeff
         self.num_instructions = args.num_instructions
         self.num_samples = args.num_samples
+        self.output_dir = args.output_dir
 
     def __str__(self):
-        return (f"Model Name or Path: {self.args.model_name_or_path}\n"
-                f"Start Coeff: {self.args.start_coeff}\n"
-                f"End Coeff: {self.args.end_coeff}\n"
-                f"Number of Instructions: {self.args.num_instructions}\n"
-                f"Number of Samples: {self.args.num_samples}")
+        return (f"Model Name or Path: {self.model_name}\n"
+                f"Dataset MMLU Names: {self.dataset_mmlu_names}\n"
+                f"Start Coeff: {self.start_coeff}\n"
+                f"End Coeff: {self.end_coeff}\n"
+                f"Number of Instructions: {self.num_instructions}\n"
+                f"Number of Samples: {self.num_samples}\n"
+                f"Output directory: {self.output_dir}\n")
 
 class GenerationArgsSafety:
     def __init__(self):
         parser = argparse.ArgumentParser(description="parser for arguments from .py script call")
-        parser.add_argument('--model_name_or_path', default="Llama-2-13b-chat", type=str, help='Path for training_args.output_dir')
+        parser.add_argument('--model_name', default="Llama-2-13b-chat", choices=['Llama-2-13b-chat', 'Llama-2-13b'], type=str, help='Path for the model (huggingface or local)')
+        parser.add_argument('--dataset_mmlu_names', default="international_law", type=parse_comma_separated, help='Path for training_args.output_dir')
         parser.add_argument('--start_coeff', default=-5.0, type=float, help='coeff to start the range of the norm injection of the representation vector')
         parser.add_argument('--end_coeff', default=5.2, type=float, help='coeff to end the range of the norm injection of the representation vector')
         parser.add_argument('--num_instructions', default=64, type=int, help='number of instructions to generate for each prompt')
         parser.add_argument('--num_samples', default=50, type=int, help='number of samples to generate for each instruction')
+        parser.add_argument('--output_dir', default="../../data/harmfulness_experiments_outputs/default_dir", type=str, help='Path for the output directory')
         
         args = parser.parse_args()
-        self.model_name_or_path = args.model_name_or_path
+        self.model_name = args.model_name
+        self.dataset_mmlu_names = args.dataset_mmlu_names
         self.start_coeff = args.start_coeff
         self.end_coeff = args.end_coeff
         self.num_instructions = args.num_instructions
         self.num_samples = args.num_samples
+        self.output_dir = args.output_dir
 
     def __str__(self):
-        return (f"Model Name or Path: {self.args.model_name_or_path}\n"
-                f"Start Coeff: {self.args.start_coeff}\n"
-                f"End Coeff: {self.args.end_coeff}\n"
-                f"Number of Instructions: {self.args.num_instructions}\n"
-                f"Number of Samples: {self.args.num_samples}")
+        return (f"Model Name or Path: {self.model_name}\n"
+                f"Dataset MMLU Names: {self.dataset_mmlu_names}\n"
+                f"Start Coeff: {self.start_coeff}\n"
+                f"End Coeff: {self.end_coeff}\n"
+                f"Number of Instructions: {self.num_instructions}\n"
+                f"Number of Samples: {self.num_samples}\n"
+                f"Output directory: {self.output_dir}\n")
 
 
 def get_logits(model, tokenizer, example, possible_answers):
@@ -89,13 +113,17 @@ def identify_letter_from_tokenized_answer(tokenized_answer):
         answer_letter = answer_letter[1]
     return answer_letter, min(answer_letters_idx)
 
-def feed_dialog_helpfulness(model, tokenizer, dataset, num_samples=1, num_instructions=64):
+def feed_dialog_helpfulness(model, tokenizer, dataset, coeff, num_samples=1, num_instructions=64):
     question_template = '''{question}\nA) {answerA}.\nB) {answerB}.\nC) {answerC}.\nD) {answerD}.\n The answer is'''
     p_label_answer_samples = [[0]*min(len(dataset), num_instructions) for _ in range(num_samples)]
     p_relative_label_answer_samples = [[0]*min(len(dataset), num_instructions) for _ in range(num_samples)]
     acc_answer_samples = [[0]*min(len(dataset), num_instructions) for _ in range(num_samples)]
+    all_answers = {f'coeff {coeff} sample {j}:': ['']*min(len(dataset), num_instructions) for j in range(num_samples)}
     for j in tqdm(range(num_samples)):
-        acc_answer, p_label_answer, p_relative_label_answer = [0]*min(len(dataset), num_instructions), [0]*min(len(dataset), num_instructions), [0]*min(len(dataset), num_instructions)
+        acc_answer, p_label_answer, p_relative_label_answer = [0]*min(len(dataset), num_instructions),\
+                                                                                [0]*min(len(dataset), num_instructions),\
+                                                                                [0]*min(len(dataset), num_instructions)
+        answers_curr_sample = {f'inst {i}:': '' for i in range(min(len(dataset), num_instructions))}
         batch_size = 32
         for i in range(min(len(dataset), num_instructions)//batch_size):
             q_dict_batch = dataset[i*batch_size:(i+1)*batch_size]
@@ -114,7 +142,7 @@ def feed_dialog_helpfulness(model, tokenizer, dataset, num_samples=1, num_instru
             dict_answer_probs = {'A': 0.0, 'B': 0.0, 'C': 0.0, 'D': 0.0}
             dict_answer_probs_first_token = {'A': 0.0, 'B': 0.0, 'C': 0.0, 'D': 0.0}
             with torch.no_grad():
-                outputs = model.generate(input_ids.cuda(), max_new_tokens=32, attention_mask=attn_mask, do_sample=True, temperature=1.0, top_p=1.0, return_dict_in_generate=True, output_scores=True)
+                outputs = model.generate(input_ids.cuda(), max_new_tokens=64, attention_mask=attn_mask, do_sample=True, temperature=1.0, top_p=1.0, return_dict_in_generate=True, output_scores=True)
                 logits_answer = outputs.scores
                 temp = [[np.array(elem[idx_batch].cpu()) for elem in outputs.scores] for idx_batch in range(batch_size)]
                 logits_answer = torch.tensor(temp)
@@ -141,11 +169,13 @@ def feed_dialog_helpfulness(model, tokenizer, dataset, num_samples=1, num_instru
                 p_relative_label_answer[i*batch_size + idx_batch] = (dict_answer_probs_first_token[q_labels[idx_batch]]/(sum(dict_answer_probs_first_token.values()))) if sum(dict_answer_probs_first_token.values()) > 0.0 else 0
                 p_label_answer[i*batch_size + idx_batch] = dict_answer_probs[q_labels[idx_batch]]
                 acc_answer[i*batch_size + idx_batch] = 1 if q_labels[idx_batch] == answer_letter else 0
-        
+                answers_curr_sample[f'inst {i*batch_size + idx_batch}:'] = answers[idx_batch]
+                
         p_label_answer_samples[j] = p_label_answer
         p_relative_label_answer_samples[j] = p_relative_label_answer
         acc_answer_samples[j] = acc_answer
-    return p_label_answer_samples, p_relative_label_answer_samples, acc_answer_samples
+        all_answers[f'coeff {coeff} sample {j}:'] = answers_curr_sample
+    return p_label_answer_samples, p_relative_label_answer_samples, acc_answer_samples, all_answers
     
 
 def test_model(model, tokenizer, dataset, mmlu_dataset_name, coeff, save_logits = False):

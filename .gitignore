@@ -15,4 +15,3 @@ common_slurm_commands.txt
 
 # Ignore all files in the 'data' and 'plots*' directories
 data/
-plots*/

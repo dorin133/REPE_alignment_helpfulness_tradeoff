@@ -18,11 +18,13 @@ import torch.nn.functional as F
 import math
 import argparse
 
+
 def load_mmlu_dataset(mmlu_dataset_name):
     dataset = load_dataset('lukaemon/mmlu', mmlu_dataset_name, trust_remote_code=True)
     return dataset['test']
 
 args = GenerationArgsHelpfulness()
+print(args)
 
 ####################### read vectors from harmful dataset
 rep_token = -1
@@ -54,7 +56,7 @@ print("load model finished!")
 ################################# load the llama2 model vocabulary
 vocabulary = tokenizer.get_vocab()
 os.environ['HF_HOME'] = '/home/dshteyma/.cache/huggingface'
-####################### load the harmful dataset behavior
+################################# load the harmful dataset behavior
 if args.model_name == "Llama-2-13b":
     train_data, train_labels, _, _ = reading_vec_dataset_Q_and_A()
 else:
@@ -74,18 +76,20 @@ wrapped_model = WrappedReadingVecModel(model, tokenizer)
 wrapped_model.unwrap()
 wrapped_model.wrap_block(layer_id, block_name=block_name)
 
-for mmlu_dataset_name in [args.dataset_mmlu_name]: # , 'high_school_computer_science', 'medical_genetics', 'international_law', 'clinical_knowledge'
+mmlu_dataset_names = args.dataset_mmlu_names.split(',')
+
+for mmlu_dataset_name in mmlu_dataset_names: # , 'high_school_computer_science', 'medical_genetics', 'international_law', 'clinical_knowledge'
     dataset = load_mmlu_dataset(mmlu_dataset_name)
-    print(f'./data/mmlu_plots/helpfulness_plots/{mmlu_dataset_name}_{args.model_name}_harmfulness_last.json')
 
     #test model on dataset for various norms of injected vectors
-    x = list(np.arange(args.start_coeff, args.end_coeff, 1))
+    x = list(np.round(np.arange(args.start_coeff, args.end_coeff, 0.2), 1))
     acc_mean = {key: 0 for key in x}
     acc_std = {key: 0 for key in x}
     p_mean = {key: 0 for key in x}
     p_mean_relative = {key: 0 for key in x}
     p_std = {key: 0 for key in x}
     p_std_relative = {key: 0 for key in x}
+    all_answers_dict = {coeff: {} for coeff in x}
 
     for i, coeff in enumerate(x):
         activations = {}
@@ -96,10 +100,13 @@ for mmlu_dataset_name in [args.dataset_mmlu_name]: # , 'high_school_computer_sci
         wrapped_model.reset()
         wrapped_model.set_controller(layer_id, activations, block_name)
 
-        probs_samples, p_relative_samples, acc_answer_samples = feed_dialog_helpfulness(
-                                                                    model, tokenizer, 
-                                                                    dataset, num_samples=args.num_samples,
-                                                                    num_instructions=min(args.num_instructions, len(dataset))
+        probs_samples, p_relative_samples, acc_answer_samples, all_answers = feed_dialog_helpfulness(
+                                                                    model, 
+                                                                    tokenizer, 
+                                                                    dataset, 
+                                                                    num_samples=args.num_samples,
+                                                                    num_instructions=min(args.num_instructions, len(dataset)),
+                                                                    coeff=coeff
                                                                 )
         
         p_mean[coeff] = np.nanmean(np.nanmean(probs_samples, axis=0))
@@ -109,14 +116,25 @@ for mmlu_dataset_name in [args.dataset_mmlu_name]: # , 'high_school_computer_sci
         p_std[coeff] = np.nanstd(np.nanmean(probs_samples, axis=0))
         p_std_relative[coeff] = np.nanstd(np.nanmean(p_relative_samples, axis=0))
         acc_std[coeff] = np.nanmean(np.nanstd(acc_answer_samples, axis=0))
+        
         print(f'p_mean for coeff {coeff}: {p_mean[coeff]}')
         print(f'p_mean_relative for coeff {coeff}: {p_mean_relative[coeff]}')
-        print(f'acc_mean for coeff {coeff}: {acc_mean[coeff]}')
-        print(f'acc_std for coeff {coeff}: {acc_std[coeff]}')
+        print(f'p_std for coeff {coeff}: {p_std[coeff]}')
+        print(f'p_std_relative for coeff {coeff}: {p_std_relative[coeff]}')
 
-        with open(f'./data/mmlu_plots/helpfulness_plots/{mmlu_dataset_name}_{args.model_name}_harmfulness.json', 'a') as file:
+        stats_directory = f'{args.output_dir}/{mmlu_dataset_name}_{args.model_name}_stats.json'
+        # os.makedirs(stats_directory, exist_ok=True)
+        with open(stats_directory, 'a') as file:
             results = {'acc_mean': acc_mean, 'acc_std': acc_std, 'p_mean': p_mean, 'p_mean_relative': p_mean_relative, 'p_std': p_std, 'p_std_relative': p_std_relative}
             json.dump(f'\n{results}\n', file)
+            
+        answers_directory = f'{args.output_dir}/{mmlu_dataset_name}_{args.model_name}_answers.json'
+        all_answers_dict[coeff] = all_answers
+        
+        # os.makedirs(answers_directory, exist_ok=True)        
+        with open(answers_directory, 'w') as file:
+            json.dump(all_answers_dict, file)
+            
 
 
 
