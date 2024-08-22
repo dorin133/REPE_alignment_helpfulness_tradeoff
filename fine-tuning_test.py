@@ -27,7 +27,8 @@ def filter_function(example):
 
 
 def preprocess_function(example):
-    output_dict = {}
+    output_dict = dict()
+    output_dict['prompt'] = example['prompt']
     if example['is_response_0_safe']:
         output_dict['chosen'] = example['response_0']
         output_dict['rejected'] = example['response_1']
@@ -42,16 +43,16 @@ train_dataset, test_dataset = dataset['train'], dataset['test']
 train_dataset = train_dataset.filter(filter_function)
 test_dataset = test_dataset.filter(filter_function)
 
-train_dataset = train_dataset.map(preprocess_function)
-test_dataset = test_dataset.map(preprocess_function)
+train_dataset = train_dataset.map(preprocess_function, remove_columns=train_dataset.column_names)
+test_dataset = test_dataset.map(preprocess_function, remove_columns=test_dataset.column_names)
 
 loftq_config = LoftQConfig(loftq_bits=4)
 peft_config = LoraConfig(
     task_type="CAUSAL_LM",
     r=8,
     lora_alpha=32,
-    lora_dropout=0.1,
-    target_modules=["q_proj", "k_proj", "v_proj"],
+    lora_dropout=0.01,
+    # target_modules=["q_proj", "k_proj", "v_proj"],
     # loftq_config=loftq_config,
 )
 
@@ -71,13 +72,15 @@ training_args = DPOConfig(
     num_train_epochs=num_epochs,
     per_device_train_batch_size=1,
     per_device_eval_batch_size=1,
-    weight_decay=0.01,
+    # weight_decay=0.01,
     logging_dir="./logs",
     save_steps=save_steps,
     gradient_accumulation_steps=16,
     fp16=True,
     evaluation_strategy="epoch",
     eval_steps=0.1,
+    logging_strategy="epoch",
+    logging_steps=0.1,
     remove_unused_columns=False,
     learning_rate=5e-5,
 )
