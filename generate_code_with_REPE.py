@@ -7,7 +7,7 @@ from tqdm import tqdm
 import os
 import numpy as np
 from repe.rep_control_reading_vec import WrappedReadingVecModel
-import harmfulness_utils_ver2
+import harmfulness_experiments.harmfulness_utils as harmfulness_utils
 from datasets import load_dataset
 from repe import repe_pipeline_registry
 import random
@@ -85,7 +85,7 @@ human_eval_dict = {q['task_id']: q for q in human_eval_data['test']}
 vocabulary = tokenizer.get_vocab()
 
 ####################### load the harmful dataset behavior - by github
-train_data, train_labels, _, _ = harmfulness_utils_ver2.reading_vec_dataset_by_github()
+train_data, train_labels, _, _ = harmfulness_utils.reading_vec_dataset_by_github()
 
 
 ####################### read vectors from harmful dataset
