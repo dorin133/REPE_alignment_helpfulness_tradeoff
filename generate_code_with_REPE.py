@@ -71,7 +71,7 @@ def main():
     # model_name_or_path_chat = f"../../llama2/{model_name}/"
     # model_name_or_path_chat = 'meta-llama/Llama-2-13b-hf'
     model_name_or_path = "/cs/labs/shashua/noamw02/llama_weights_hf/llama-2-13b-chat/"
-    model = AutoModelForCausalLM.from_pretrained(model_name_or_path, torch_dtype=torch.float16, device_map="auto", token=True).eval()
+    model = AutoModelForCausalLM.from_pretrained(model_name_or_path, torch_dtype=torch.float16, token=True).eval()
     use_fast_tokenizer = "LlamaForCausalLM" not in model.config.architectures
     tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=use_fast_tokenizer, padding_side="left", legacy=False, token=True)
     tokenizer.pad_token_id = 0 if tokenizer.pad_token_id is None else tokenizer.pad_token_id

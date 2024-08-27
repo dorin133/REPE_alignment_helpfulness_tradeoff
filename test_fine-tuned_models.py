@@ -14,8 +14,9 @@ from generate_code_with_REPE import sample_model
 
 
 def load_model(model_path):
-    model = AutoModelForCausalLM.from_pretrained(model_path)
-    tokenizer = AutoTokenizer.from_pretrained(model_path)
+    model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16, token=True).eval()
+    tokenizer = AutoTokenizer.from_pretrained(model_path, padding_side="left", legacy=False, token=True)
+    model.to(device)
     return model, tokenizer
 
 torch.manual_seed(42)
