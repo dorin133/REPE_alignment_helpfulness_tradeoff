@@ -65,81 +65,84 @@ def sample_model(model, tokenizer, question, num_samples=32, batch_size=2):
 
     return all_answers
 
+def main():
+    # model_name = "Llama-2-13b"
+    ################################# load model
+    # model_name_or_path_chat = f"../../llama2/{model_name}/"
+    # model_name_or_path_chat = 'meta-llama/Llama-2-13b-hf'
+    model_name_or_path = "/cs/labs/shashua/noamw02/llama_weights_hf/llama-2-13b-chat/"
+    model = AutoModelForCausalLM.from_pretrained(model_name_or_path, torch_dtype=torch.float16, device_map="auto", token=True).eval()
+    use_fast_tokenizer = "LlamaForCausalLM" not in model.config.architectures
+    tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=use_fast_tokenizer, padding_side="left", legacy=False, token=True)
+    tokenizer.pad_token_id = 0 if tokenizer.pad_token_id is None else tokenizer.pad_token_id
+    tokenizer.bos_token_id = 1
+    print("load model finished!")
 
-# model_name = "Llama-2-13b"
-################################# load model
-# model_name_or_path_chat = f"../../llama2/{model_name}/"
-# model_name_or_path_chat = 'meta-llama/Llama-2-13b-hf'
-model_name_or_path = "/cs/labs/shashua/noamw02/llama_weights_hf/llama-2-13b-chat/"
-model = AutoModelForCausalLM.from_pretrained(model_name_or_path, torch_dtype=torch.float16, device_map="auto", token=True).eval()
-use_fast_tokenizer = "LlamaForCausalLM" not in model.config.architectures
-tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=use_fast_tokenizer, padding_side="left", legacy=False, token=True)
-tokenizer.pad_token_id = 0 if tokenizer.pad_token_id is None else tokenizer.pad_token_id
-tokenizer.bos_token_id = 1
-print("load model finished!")
+    human_eval_data = load_dataset("openai/openai_humaneval")
+    human_eval_dict = {q['task_id']: q for q in human_eval_data['test']}
 
-human_eval_data = load_dataset("openai/openai_humaneval")
-human_eval_dict = {q['task_id']: q for q in human_eval_data['test']}
+    ################################# load the llama2 model vocabulary
+    vocabulary = tokenizer.get_vocab()
 
-################################# load the llama2 model vocabulary
-vocabulary = tokenizer.get_vocab()
-
-####################### load the harmful dataset behavior - by github
-train_data, train_labels, _, _ = harmfulness_utils.reading_vec_dataset_by_github()
+    ####################### load the harmful dataset behavior - by github
+    train_data, train_labels, _, _ = harmfulness_utils.reading_vec_dataset_by_github()
 
 
-####################### read vectors from harmful dataset
-rep_token = -1
-hidden_layers = list(range(-1, -model.config.num_hidden_layers, -1))
-n_difference = 1
-direction_method = 'pca'
-rep_reading_pipeline = pipeline("rep-reading", model=model, tokenizer=tokenizer)
-direction_finder_kwargs={"n_components": 1}
+    ####################### read vectors from harmful dataset
+    rep_token = -1
+    hidden_layers = list(range(-1, -model.config.num_hidden_layers, -1))
+    n_difference = 1
+    direction_method = 'pca'
+    rep_reading_pipeline = pipeline("rep-reading", model=model, tokenizer=tokenizer)
+    direction_finder_kwargs={"n_components": 1}
 
-rep_reader = rep_reading_pipeline.get_directions(train_data, rep_token=rep_token,hidden_layers=hidden_layers,n_difference=n_difference, train_labels=train_labels, direction_method=direction_method, direction_finder_kwargs=direction_finder_kwargs)
+    rep_reader = rep_reading_pipeline.get_directions(train_data, rep_token=rep_token,hidden_layers=hidden_layers,n_difference=n_difference, train_labels=train_labels, direction_method=direction_method, direction_finder_kwargs=direction_finder_kwargs)
 
-pca_vectors = rep_reader.directions #to get vector of specific layer[layer][0]
-pca_signs = rep_reader.direction_signs #to get sign of specific layer[layer]
-#prepare RepE model
-block_name = "decoder_block"
-layer_id = list(range(-25, -33, -1)) # 13B
-# layer_id = list(range(-18, -23, -1)) # 7B
-wrapped_model = WrappedReadingVecModel(model, tokenizer)
-wrapped_model.unwrap()
-wrapped_model.wrap_block(layer_id, block_name=block_name)
+    pca_vectors = rep_reader.directions #to get vector of specific layer[layer][0]
+    pca_signs = rep_reader.direction_signs #to get sign of specific layer[layer]
+    #prepare RepE model
+    block_name = "decoder_block"
+    layer_id = list(range(-25, -33, -1)) # 13B
+    # layer_id = list(range(-18, -23, -1)) # 7B
+    wrapped_model = WrappedReadingVecModel(model, tokenizer)
+    wrapped_model.unwrap()
+    wrapped_model.wrap_block(layer_id, block_name=block_name)
 
-#test model on dataset for various norms of injected vectors
-x = [-3.0, -2.5, -2.0, -1.5, -1.4, -1.2, -1.0, -0.8, -0.6, -0.5, -0.4, -0.2, 0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.5, 2.0, 2.5, 3.0]
+    #test model on dataset for various norms of injected vectors
+    x = [-3.0, -2.5, -2.0, -1.5, -1.4, -1.2, -1.0, -0.8, -0.6, -0.5, -0.4, -0.2, 0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.5, 2.0, 2.5, 3.0]
 
-generation_path = 'code_generations_results_15_08_all_human_eval.json'
-generation_dict_string_keys = read_json_if_exists(generation_path)
-print("Loaded generation dict with:")
-for key in generation_dict_string_keys:
-    for inner_key in generation_dict_string_keys[key]:
-        print(f"{key}: {inner_key}")
-print("-"*50)
-generation_dict = {float(key): generation_dict_string_keys[key] for key in generation_dict_string_keys}
+    generation_path = 'code_generations_results_15_08_all_human_eval.json'
+    generation_dict_string_keys = read_json_if_exists(generation_path)
+    print("Loaded generation dict with:")
+    for key in generation_dict_string_keys:
+        for inner_key in generation_dict_string_keys[key]:
+            print(f"{key}: {inner_key}")
+    print("-"*50)
+    generation_dict = {float(key): generation_dict_string_keys[key] for key in generation_dict_string_keys}
 
-for i, coeff in enumerate(x):
-    print(coeff)
-    activations = {}
-    for layer in layer_id:
-        v = torch.tensor(pca_vectors[layer]*pca_signs[layer][0])
-        v = (v / torch.norm(v)).cpu()
-        activations[layer] = torch.tensor(coeff * v).to(model.device).half()
-    wrapped_model.reset()
-    wrapped_model.set_controller(layer_id, activations, block_name)
+    for i, coeff in enumerate(x):
+        print(coeff)
+        activations = {}
+        for layer in layer_id:
+            v = torch.tensor(pca_vectors[layer]*pca_signs[layer][0])
+            v = (v / torch.norm(v)).cpu()
+            activations[layer] = torch.tensor(coeff * v).to(model.device).half()
+        wrapped_model.reset()
+        wrapped_model.set_controller(layer_id, activations, block_name)
 
-    if coeff not in generation_dict:
-        generation_dict[coeff] = dict()
-    for j, key in enumerate(human_eval_dict):
-        if key in generation_dict[coeff]:
-            continue
-        print(key)
-        question = human_eval_dict[key]
-        generation_dict[coeff][key] \
-            = sample_model(model, tokenizer, question, num_samples=16, batch_size=4)
+        if coeff not in generation_dict:
+            generation_dict[coeff] = dict()
+        for j, key in enumerate(human_eval_dict):
+            if key in generation_dict[coeff]:
+                continue
+            print(key)
+            question = human_eval_dict[key]
+            generation_dict[coeff][key] \
+                = sample_model(model, tokenizer, question, num_samples=16, batch_size=4)
 
-        if j % 5 == 0:
-            with open(generation_path, 'w') as file:
-                json.dump(generation_dict, file)
+            if j % 5 == 0:
+                with open(generation_path, 'w') as file:
+                    json.dump(generation_dict, file)
+
+if __name__ == "__main__":
+    main()
