@@ -39,8 +39,10 @@ def read_json_if_exists(file_path):
         return dict()
 
 
-def sample_model(model, tokenizer, question, num_samples=32, batch_size=2):
-    prompt = question_template.format(user_prompt=question['prompt'])
+def sample_model(model, tokenizer, question, num_samples=32, batch_size=2, question_template_for_sample=None):
+    if question_template_for_sample is None:
+        question_template_for_sample = question_template
+    prompt = question_template_for_sample.format(user_prompt=question['prompt'])
     q_encoding = tokenizer.encode_plus(prompt, return_tensors="pt", padding=True)
     input_ids = q_encoding['input_ids'].to(device)
     attn_mask = q_encoding['attention_mask'].to(device)

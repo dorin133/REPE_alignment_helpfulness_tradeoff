@@ -11,8 +11,10 @@ import random
 import pdb
 import os
 import gc
-from generate_code_with_REPE import sample_model
+from generate_code_with_REPE import sample_model, read_json_if_exists
 
+question_template = \
+"""<|begin_of_text|>{user_message}"""
 
 def load_model(model_path):
     model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16, token=True).eval()
@@ -56,7 +58,8 @@ for model_subdir in model_subdirs:
         print(f"Model: {model_subdir}")
         print("Generating samples...")
 
-        samples = sample_model(model, tokenizer, q, num_samples=16, batch_size=16)
+        samples = sample_model(model, tokenizer, q, num_samples=16, batch_size=16,
+                               question_template_for_sample=question_template)
         generation_dict[model_subdir][q_id] = samples
 
     with open(generation_path, 'w') as file:
