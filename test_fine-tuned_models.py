@@ -14,7 +14,7 @@ import gc
 from generate_code_with_REPE import sample_model, read_json_if_exists
 
 question_template = \
-"""<|begin_of_text|>{user_message}"""
+"""<|begin_of_text|>{user_prompt}"""
 
 def load_model(model_path):
     model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16, token=True).eval()
