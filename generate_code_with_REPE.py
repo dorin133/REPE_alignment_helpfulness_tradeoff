@@ -113,7 +113,7 @@ def main():
     #test model on dataset for various norms of injected vectors
     x = [-3.0, -2.5, -2.0, -1.5, -1.4, -1.2, -1.0, -0.8, -0.6, -0.5, -0.4, -0.2, 0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.5, 2.0, 2.5, 3.0]
 
-    generation_path = 'code_generations_results_15_08_all_human_eval.json'
+    generation_path = 'code_generations/code_generations_results_15_08_all_human_eval.json'
     generation_dict_string_keys = read_json_if_exists(generation_path)
     print("Loaded generation dict with:")
     for key in generation_dict_string_keys:

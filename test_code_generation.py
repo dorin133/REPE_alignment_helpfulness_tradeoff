@@ -142,18 +142,7 @@ def main():
     human_eval_data = load_dataset("openai/openai_humaneval")
     human_eval_dict = {q['task_id']: q for q in human_eval_data['test']}
     all_gen_dict = {}
-    # read all generations
-    # gens_paths = ['code_generations/code_generations_results_04_08_negative_more.json',
-    #               'code_generations/code_generations_results_04_08_positive_more.json',
-    #               'code_generations/code_generations_results_04_08_negative.json',
-    #               'code_generations/code_generations_results_04_08_positive.json',
-    #               'code_generations/code_generations_results_03_08_negative.json',
-    #               'code_generations/code_generations_results_03_08_positive.json',
-    #               'code_generations/code_generations_results_05_08_more_q_3.json',
-    #               'code_generations/code_generations_results_05_08_more_q_4.json',
-    #               'code_generations/code_generations_results_05_08_more_q_5.json',
-    #               ]
-    gens_paths = ['code_generations_results_15_08_all_human_eval.json']
+    gens_paths = ['code_generations/code_generations_results_15_08_all_human_eval.json']
     for path in gens_paths:
         curr_gen = open(path)
         curr_gen = json.load(curr_gen)
