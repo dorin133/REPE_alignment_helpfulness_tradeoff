@@ -76,13 +76,9 @@ def extract_function_2(mixed_string, function_name):
 
 
 def test_human_eval_dataset(all_generations, data_dict):
-    problems_to_remove = ['HumanEval/3', 'HumanEval/27', 'HumanEval/149', 'HumanEval/150', 'HumanEval/157']
     results = dict()
     for coeff in all_generations:
         curr_generations = all_generations[coeff]
-        # remove problems that always have a 0 percent success rate
-        # for p in problems_to_remove:
-        #     del curr_generations[p]
         success_perc_list = []
         for key in curr_generations:
             print(key)
@@ -91,7 +87,10 @@ def test_human_eval_dataset(all_generations, data_dict):
 
             full_success_list = []
             for i in range(len(curr_generation_batch)):
-                curr_answer = curr_problem['prompt'] + '\n' + curr_generation_batch[i]
+                ADD_PROMPT = True
+                curr_answer = curr_generation_batch[i]
+                if ADD_PROMPT:
+                    curr_answer = f"{curr_problem['prompt']}\n{curr_answer}"
                 curr_imports = get_import_lines(curr_answer)
                 # try a few function extraction methods
                 function_codes_to_try = []
@@ -106,7 +105,7 @@ def test_human_eval_dataset(all_generations, data_dict):
                         is_pass = False
                         continue
                     curr_code_with_imports = f"{curr_imports}\n{curr_function_code}"
-                    is_pass = test_humaneval_function(curr_problem, curr_code_with_imports)
+                    is_pass = test_humaneval_function(curr_problem, curr_function_code)
                     if is_pass:
                         break
                 full_success_list.append(is_pass)
@@ -154,7 +153,7 @@ def main():
     #               'code_generations/code_generations_results_05_08_more_q_4.json',
     #               'code_generations/code_generations_results_05_08_more_q_5.json',
     #               ]
-    gens_paths = ['llama_3.1']
+    gens_paths = ['code_generations_results_15_08_all_human_eval.json']
     for path in gens_paths:
         curr_gen = open(path)
         curr_gen = json.load(curr_gen)
