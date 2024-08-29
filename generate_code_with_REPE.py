@@ -1,11 +1,6 @@
-import csv
-import tqdm
 import torch
 import json
 from transformers import AutoTokenizer, pipeline, AutoModelForCausalLM
-from tqdm import tqdm
-import os
-import numpy as np
 from repe.rep_control_reading_vec import WrappedReadingVecModel
 import harmfulness_experiments.harmfulness_utils as harmfulness_utils
 from datasets import load_dataset
@@ -13,7 +8,7 @@ from repe import repe_pipeline_registry
 import random
 import pdb
 
-from utils import read_json_if_exists, sample_model
+from utils import read_json_if_exists, sample_model, set_seed
 
 repe_pipeline_registry()
 
@@ -22,6 +17,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 def main():
+    set_seed(42)
     model_name_or_path = "/cs/labs/shashua/noamw02/llama_weights_hf/llama-2-13b-chat/"
     model = AutoModelForCausalLM.from_pretrained(model_name_or_path, torch_dtype=torch.float16, token=True).eval()
     use_fast_tokenizer = "LlamaForCausalLM" not in model.config.architectures

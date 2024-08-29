@@ -391,8 +391,9 @@ def identify_behavior_from_raw_model_answer(answer, agrees_to_answer_flag, refue
         return agrees_to_answer_flag                   
     return refueses_to_answer_flag
 
-def feed_dialog_behavior(model, model_name, tokenizer, dataset, coeff, num_samples=1, num_instructions=64):
-    question_template = '''[INST]{question} Answer: [\INST]'''
+def feed_dialog_behavior(model, model_name, tokenizer, dataset, coeff, num_samples=1, num_instructions=64, question_template=None):
+    if question_template is None:
+        question_template = '''[INST]{question} Answer: [\INST]'''
     
     behavior_all_samples = [[0]*min(len(dataset), num_instructions) for _ in range(num_samples)]
 
@@ -466,4 +467,3 @@ def load_pca_vectors_and_signs(behavior_name):
 
     
 
-    

@@ -1,17 +1,11 @@
-import csv
-import tqdm
 import torch
 import json
-from tqdm import tqdm
-import os
-import numpy as np
 from datasets import load_dataset
-import random
 import pdb
 import os
 from utils import sample_model, read_json_if_exists, clear_memory, load_model, set_seed
 
-question_template = \
+question_template_llama_3_1 = \
 """<|begin_of_text|>{user_prompt}"""
 
 set_seed(42)
@@ -44,7 +38,7 @@ for model_subdir in model_subdirs:
         print("Generating samples...")
 
         samples = sample_model(model, tokenizer, q, num_samples=16, batch_size=16,
-                               question_template_for_sample=question_template)
+                               question_template_for_sample=question_template_llama_3_1)
         generation_dict[model_subdir][q_id] = samples
 
     with open(generation_path, 'w') as file:
