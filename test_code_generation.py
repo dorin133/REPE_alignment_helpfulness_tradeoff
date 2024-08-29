@@ -87,8 +87,9 @@ def test_human_eval_dataset(all_generations, data_dict):
 
             full_success_list = []
             for i in range(len(curr_generation_batch)):
-                ADD_PROMPT = True
+                entry_point = curr_problem['entry_point']
                 curr_answer = curr_generation_batch[i]
+                ADD_PROMPT = f'def {entry_point}' not in curr_answer
                 if ADD_PROMPT:
                     curr_answer = f"{curr_problem['prompt']}\n{curr_answer}"
                 curr_imports = get_import_lines(curr_answer)
@@ -106,6 +107,7 @@ def test_human_eval_dataset(all_generations, data_dict):
                         continue
                     curr_code_with_imports = f"{curr_imports}\n{curr_function_code}"
                     is_pass = test_humaneval_function(curr_problem, curr_function_code)
+                    # pdb.set_trace()
                     if is_pass:
                         break
                 full_success_list.append(is_pass)
@@ -113,7 +115,7 @@ def test_human_eval_dataset(all_generations, data_dict):
             success_perc = np.sum(full_success_list) / len(curr_generation_batch)
             success_perc_list.append(success_perc)
 
-        results[float(coeff)] = np.average(success_perc_list), np.std(success_perc_list) / len(success_perc_list)**0.5
+        results[coeff] = np.average(success_perc_list), np.std(success_perc_list) / len(success_perc_list)**0.5
     return results
 
 
@@ -138,11 +140,22 @@ def plot_results(keys, averages, stds):
     plt.show()
 
 
+def plot_fine_tuned_models_results(results_dict):
+    results = []
+    for i in range(75, 825, 75):
+        curr_results = results_dict[f"checkpoint-{i}"]
+        results.append(curr_results)
+
+    avgs = [res[0] for res in results]
+    stds = [res[1] for res in results]
+    plot_results(np.arange(len(results)), avgs, stds)
+
+
 def main():
     human_eval_data = load_dataset("openai/openai_humaneval")
     human_eval_dict = {q['task_id']: q for q in human_eval_data['test']}
     all_gen_dict = {}
-    gens_paths = ['code_generations/code_generations_results_15_08_all_human_eval.json']
+    gens_paths = ['fine-tuned_model_generations.json']
     for path in gens_paths:
         curr_gen = open(path)
         curr_gen = json.load(curr_gen)
@@ -157,14 +170,15 @@ def main():
                         all_gen_dict[key][q_key] += curr_gen[key][q_key]
 
     # this is the range we are interested in (it's all 0 out of it)
-    all_gen_dict = {key: val for key, val in all_gen_dict.items() if abs(float(key)) <= 3}
+    # all_gen_dict = {key: val for key, val in all_gen_dict.items() if abs(float(key)) <= 3}
     results = test_human_eval_dataset(all_gen_dict, human_eval_dict)
-    print(results)
-    results = dict(sorted(results.items()))
-    sorted_keys = list(results.keys())
-    avgs = [key[0] for key in results.values()]
-    stds = [key[1] for key in results.values()]
-    plot_results(sorted_keys, avgs, stds)
+    plot_fine_tuned_models_results(results)
+    # print(results)
+    # results = dict(sorted(results.items()))
+    # sorted_keys = list(results.keys())
+    # avgs = [key[0] for key in results.values()]
+    # stds = [key[1] for key in results.values()]
+    # plot_results(sorted_keys, avgs, stds)
 
 
 if __name__ == '__main__':

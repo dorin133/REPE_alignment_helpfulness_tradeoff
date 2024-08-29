@@ -2,7 +2,6 @@ import csv
 import tqdm
 import torch
 import json
-from transformers import AutoTokenizer, pipeline, AutoModelForCausalLM
 from tqdm import tqdm
 import os
 import numpy as np
@@ -10,26 +9,12 @@ from datasets import load_dataset
 import random
 import pdb
 import os
-import gc
-from generate_code_with_REPE import sample_model, read_json_if_exists
+from utils import sample_model, read_json_if_exists, clear_memory, load_model, set_seed
 
 question_template = \
 """<|begin_of_text|>{user_prompt}"""
 
-def load_model(model_path):
-    model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16, token=True).eval()
-    tokenizer = AutoTokenizer.from_pretrained(model_path, padding_side="left", legacy=False, token=True)
-    model.to(device)
-    return model, tokenizer
-
-def clear_memory():
-    gc.collect()
-    torch.cuda.empty_cache()
-    if torch.cuda.is_available():
-        torch.cuda.synchronize()
-
-torch.manual_seed(42)
-random.seed(42)
+set_seed(42)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 human_eval_data = load_dataset("openai/openai_humaneval")
@@ -71,4 +56,3 @@ for model_subdir in model_subdirs:
     clear_memory()
     print("Memory cleared")
     print()
-
