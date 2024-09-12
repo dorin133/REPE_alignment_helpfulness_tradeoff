@@ -436,7 +436,9 @@ def feed_dialog_behavior(model, model_name, tokenizer, dataset, coeff, num_sampl
                 if not take_only_new_tokens:
                     print(f'\n\nanswers batch {i} for coeff={coeff} in sample {j}:\n\n {answers}')
                 else:
-                    print(f'batch {i} for coeff={coeff} \n')
+                    print(" ")
+                    print_color(f'batch {i} for coeff={coeff}', color=bcolors.FAIL)
+                    print(" ")
                     for h, answer in enumerate(answers):
                         print("prompt: \n")
                         print_color(q_dict_batch_formatted[h], color=bcolors.OKGREEN)
