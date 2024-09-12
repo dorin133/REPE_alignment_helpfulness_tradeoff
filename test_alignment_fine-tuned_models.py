@@ -29,7 +29,7 @@ for model_subdir in model_subdirs:
                                                                        coeff=model_subdir,
                                                                        num_samples=1,
                                                                        # num_instructions=len(harmful_test_data),
-                                                                       num_instructions=16,
+                                                                       num_instructions=32,
                                                                        question_template=question_template_llama_3_1,
                                                                         take_only_new_tokens=True,
                                                                         max_new_tokens=64,
