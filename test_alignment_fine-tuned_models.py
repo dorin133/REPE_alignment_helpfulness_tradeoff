@@ -23,11 +23,11 @@ for model_subdir in model_subdirs:
     model, tokenizer = load_model(model_path)
 
     results_dict[model_subdir] = harmfulness_utils.feed_dialog_behavior(model=model,
-                                                                       model_name=model_subdir,
+                                                                       model_name="llama_3.1_" + model_subdir,
                                                                        tokenizer=tokenizer,
                                                                        dataset=harmful_test_data,
-                                                                       coeff=0,
-                                                                       num_samples=4,
+                                                                       coeff=model_subdir,
+                                                                       num_samples=1,
                                                                        num_instructions=len(harmful_test_data),
                                                                        question_template=question_template_llama_3_1,
                                                                         take_only_new_tokens=True)
