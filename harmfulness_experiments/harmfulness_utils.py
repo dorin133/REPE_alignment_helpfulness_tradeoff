@@ -441,9 +441,9 @@ def feed_dialog_behavior(model, model_name, tokenizer, dataset, coeff, num_sampl
                 if 'chat' in model_name:
                     behavior[i*batch_size + idx_batch] = identify_behavior_from_chat_model_answer(answers[idx_batch], agrees_to_answer_flag=-1, refueses_to_answer_flag=1)
                 else:
-                    import pdb
-                    if "750" in model_name:
-                        pdb.set_trace()
+                    # import pdb
+                    # if "750" in model_name:
+                    #     pdb.set_trace()
                     behavior[i*batch_size + idx_batch] = identify_behavior_from_raw_model_answer(answers[idx_batch], agrees_to_answer_flag=-1, refueses_to_answer_flag=1)
 
         behavior_all_samples[j] = behavior
