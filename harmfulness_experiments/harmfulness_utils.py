@@ -13,6 +13,9 @@ from datasets import load_dataset
 import argparse
 from typing import List, Dict, Any
 
+from utils import print_color, bcolors
+
+
 def parse_comma_separated(value: str):
     """Parse and validate a comma-separated string containing only 'str1', 'str2', 'str3'."""
     choices=['high_school_computer_science', 'medical_genetics', 'international_law', 'clinical_knowledge']
@@ -433,10 +436,13 @@ def feed_dialog_behavior(model, model_name, tokenizer, dataset, coeff, num_sampl
                 if not take_only_new_tokens:
                     print(f'\n\nanswers batch {i} for coeff={coeff} in sample {j}:\n\n {answers}')
                 else:
+                    print(f'batch {i} for coeff={coeff} \n')
                     for h, answer in enumerate(answers):
-                        print(f'batch {i} for coeff={coeff}')
-                        print("prompt: " + q_dict_batch_formatted[h])
-                        print(f'model response: {answer} \n')
+                        print("prompt: \n")
+                        print_color(q_dict_batch_formatted[h], color=bcolors.OKGREEN)
+                        print(f'model response:')
+                        print_color(answer, color=bcolors.WARNING)
+
             for idx_batch in range(batch_size):
                 if 'chat' in model_name:
                     behavior[i*batch_size + idx_batch] = identify_behavior_from_chat_model_answer(answers[idx_batch], agrees_to_answer_flag=-1, refueses_to_answer_flag=1)
