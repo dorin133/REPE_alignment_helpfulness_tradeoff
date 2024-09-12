@@ -441,9 +441,9 @@ def feed_dialog_behavior(model, model_name, tokenizer, dataset, coeff, num_sampl
                     print(" ")
                     for h, answer in enumerate(answers):
                         print("prompt: \n")
-                        print_color(q_dict_batch_formatted[h], color=bcolors.OKGREEN)
+                        print(q_dict_batch_formatted[h])
                         print(f'model response:')
-                        print_color(answer, color=bcolors.WARNING)
+                        print(answer)
 
             for idx_batch in range(batch_size):
                 if 'chat' in model_name:
