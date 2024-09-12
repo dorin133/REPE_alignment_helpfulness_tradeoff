@@ -21,6 +21,7 @@ for model_subdir in model_subdirs:
     model_path = os.path.join(model_dir, model_subdir)
     print(f"Testing model in: {model_path}")
     model, tokenizer = load_model(model_path)
+    tokenizer.pad_token = tokenizer.eos_token
 
     results_dict[model_subdir] = harmfulness_utils.feed_dialog_behavior(model=model,
                                                                        model_name="llama_3.1_" + model_subdir,
