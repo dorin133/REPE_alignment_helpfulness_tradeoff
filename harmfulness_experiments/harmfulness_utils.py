@@ -391,7 +391,8 @@ def identify_behavior_from_raw_model_answer(answer, agrees_to_answer_flag, refue
         return agrees_to_answer_flag                   
     return refueses_to_answer_flag
 
-def feed_dialog_behavior(model, model_name, tokenizer, dataset, coeff, num_samples=1, num_instructions=64, question_template=None):
+def feed_dialog_behavior(model, model_name, tokenizer, dataset, coeff, num_samples=1, num_instructions=64,
+                         question_template=None, take_only_new_tokens=False):
     if question_template is None:
         question_template = '''[INST]{question} Answer: [/INST]'''
     
@@ -415,12 +416,16 @@ def feed_dialog_behavior(model, model_name, tokenizer, dataset, coeff, num_sampl
             attn_mask = inputs['attention_mask'].to('cuda')
 
             with torch.no_grad():
+                input_length = input_ids.shape[1]
                 outputs = model.generate(input_ids.cuda(), max_new_tokens=32, attention_mask=attn_mask, do_sample=True, temperature=1.0, top_p=1.0, return_dict_in_generate=True, output_scores=True)
                 logits_answer = outputs.scores
                 temp = [[np.array(elem[idx_batch].cpu()) for elem in outputs.scores] for idx_batch in range(batch_size)]
                 logits_answer = torch.tensor(temp)
                 # predicted_ids = torch.argmax(logits_answer, dim=-1)
-                answers = tokenizer.batch_decode(outputs.sequences, skip_special_tokens=True)
+                sequences = outputs.sequences
+                if take_only_new_tokens:
+                    sequences = sequences[:, input_length:]
+                answers = tokenizer.batch_decode(sequences, skip_special_tokens=True)
                 answers = [answer.replace(q,"").replace('<s>',"").replace('</s>',"") for (answer, q) in zip(answers, q_dict_batch_formatted)]
                 print(f'\n\nanswers batch {i} for coeff={coeff} in sample {j}:\n\n {answers}')
             for idx_batch in range(batch_size):
@@ -428,7 +433,8 @@ def feed_dialog_behavior(model, model_name, tokenizer, dataset, coeff, num_sampl
                     behavior[i*batch_size + idx_batch] = identify_behavior_from_chat_model_answer(answers[idx_batch], agrees_to_answer_flag=-1, refueses_to_answer_flag=1)
                 else:
                     import pdb
-                    pdb.set_trace()
+                    if "750" in model_name:
+                        pdb.set_trace()
                     behavior[i*batch_size + idx_batch] = identify_behavior_from_raw_model_answer(answers[idx_batch], agrees_to_answer_flag=-1, refueses_to_answer_flag=1)
 
         behavior_all_samples[j] = behavior
