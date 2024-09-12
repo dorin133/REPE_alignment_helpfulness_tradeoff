@@ -392,7 +392,7 @@ def identify_behavior_from_raw_model_answer(answer, agrees_to_answer_flag, refue
     return refueses_to_answer_flag
 
 def feed_dialog_behavior(model, model_name, tokenizer, dataset, coeff, num_samples=1, num_instructions=64,
-                         question_template=None, take_only_new_tokens=False):
+                         question_template=None, take_only_new_tokens=False, max_new_tokens=32):
     if question_template is None:
         question_template = '''[INST]{question} Answer: [/INST]'''
     
@@ -417,7 +417,9 @@ def feed_dialog_behavior(model, model_name, tokenizer, dataset, coeff, num_sampl
 
             with torch.no_grad():
                 input_length = input_ids.shape[1]
-                outputs = model.generate(input_ids.cuda(), max_new_tokens=32, attention_mask=attn_mask, do_sample=True, temperature=1.0, top_p=1.0, return_dict_in_generate=True, output_scores=True)
+                outputs = model.generate(input_ids.cuda(), max_new_tokens=max_new_tokens, attention_mask=attn_mask,
+                                         do_sample=True, temperature=1.0, top_p=1.0, return_dict_in_generate=True,
+                                         output_scores=True)
                 logits_answer = outputs.scores
                 temp = [[np.array(elem[idx_batch].cpu()) for elem in outputs.scores] for idx_batch in range(batch_size)]
                 logits_answer = torch.tensor(temp)

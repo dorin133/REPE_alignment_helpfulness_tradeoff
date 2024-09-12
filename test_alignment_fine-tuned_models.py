@@ -14,6 +14,7 @@ harmful_test_data = raw_test_data[1::2][:100]
 
 model_dir = '/cs/labs/shashua/binyamin/REPE_alignment_helpfulness_tradeoff/lora_finetuned_model_22_08_ver3/'
 model_subdirs = [d for d in os.listdir(model_dir) if os.path.isdir(os.path.join(model_dir, d))]
+model_subdirs = sorted(model_subdirs, key=lambda x: int(x.split('-')[-1]))
 
 output_path = 'fine-tuned_model_alignment_test.json'
 results_dict = dict()
@@ -30,7 +31,8 @@ for model_subdir in model_subdirs:
                                                                        num_samples=1,
                                                                        num_instructions=len(harmful_test_data),
                                                                        question_template=question_template_llama_3_1,
-                                                                        take_only_new_tokens=True)
+                                                                        take_only_new_tokens=True,
+                                                                        max_new_tokens=64)
 
     # Clear memory
     del model
