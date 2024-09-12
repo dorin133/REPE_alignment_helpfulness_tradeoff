@@ -75,3 +75,12 @@ def set_seed(seed):
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
+
+def get_checkpoint_models(model_dir, base_model = None):
+    if base_model is None:
+        base_model = os.path.join('/cs/labs/shashua/binyamin/models/', "Meta-Llama-3.1-8B")
+
+    model_subdirs = [d for d in os.listdir(model_dir) if os.path.isdir(os.path.join(model_dir, d))]
+    model_subdirs = sorted(model_subdirs, key=lambda x: int(x.split('-')[-1]))
+    model_subdirs.insert(0, base_model)
+    return model_subdirs

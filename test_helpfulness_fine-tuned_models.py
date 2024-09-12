@@ -3,7 +3,7 @@ import json
 from datasets import load_dataset
 import pdb
 import os
-from utils import sample_model, read_json_if_exists, clear_memory, load_model, set_seed
+from utils import sample_model, read_json_if_exists, clear_memory, load_model, set_seed, get_checkpoint_models
 
 question_template_llama_3_1 = \
 """<|begin_of_text|>{user_prompt}"""
@@ -18,7 +18,7 @@ human_eval_dict = {q['task_id']: q for q in human_eval_data['test'] if q['task_i
 
 
 model_dir = '/cs/labs/shashua/binyamin/REPE_alignment_helpfulness_tradeoff/lora_finetuned_model_22_08_ver3/'
-model_subdirs = [d for d in os.listdir(model_dir) if os.path.isdir(os.path.join(model_dir, d))]
+model_subdirs = get_checkpoint_models(model_dir)
 
 generation_path = 'fine-tuned_model_generations.json'
 generation_dict = read_json_if_exists(generation_path)
