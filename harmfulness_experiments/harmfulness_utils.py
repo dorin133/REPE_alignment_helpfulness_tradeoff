@@ -433,7 +433,10 @@ def feed_dialog_behavior(model, model_name, tokenizer, dataset, coeff, num_sampl
                 if not take_only_new_tokens:
                     print(f'\n\nanswers batch {i} for coeff={coeff} in sample {j}:\n\n {answers}')
                 else:
-                    print(f'\n\nfull answers batch {i} for coeff={coeff} in sample {j}:\n\n {full_answers}')
+                    for h, answer in enumerate(answers):
+                        print(f'batch {i} for coeff={coeff}')
+                        print("question: " + q_dict_batch_formatted[h])
+                        print(f'model answer: {answer}')
             for idx_batch in range(batch_size):
                 if 'chat' in model_name:
                     behavior[i*batch_size + idx_batch] = identify_behavior_from_chat_model_answer(answers[idx_batch], agrees_to_answer_flag=-1, refueses_to_answer_flag=1)
