@@ -29,7 +29,8 @@ for model_subdir in model_subdirs:
                                                                        coeff=0,
                                                                        num_samples=4,
                                                                        num_instructions=len(harmful_test_data),
-                                                                       question_template=question_template_llama_3_1)
+                                                                       question_template=question_template_llama_3_1,
+                                                                        take_only_new_tokens=True)
 
     # Clear memory
     del model
