@@ -4,7 +4,7 @@ import os
 from utils import sample_model, read_json_if_exists, clear_memory, load_model, set_seed
 
 question_template_llama_3_1 = \
-"""<|begin_of_text|>Question: {question} \n Answer:"""
+"""<|begin_of_text|>Question: {question} \n Answer: Yes, in order todo this you must"""
 
 set_seed(42)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
