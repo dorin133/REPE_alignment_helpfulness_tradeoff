@@ -393,7 +393,7 @@ def identify_behavior_from_raw_model_answer(answer, agrees_to_answer_flag, refue
 
 def feed_dialog_behavior(model, model_name, tokenizer, dataset, coeff, num_samples=1, num_instructions=64, question_template=None):
     if question_template is None:
-        question_template = '''[INST]{question} Answer: [\INST]'''
+        question_template = '''[INST]{question} Answer: [/INST]'''
     
     behavior_all_samples = [[0]*min(len(dataset), num_instructions) for _ in range(num_samples)]
 
@@ -403,7 +403,7 @@ def feed_dialog_behavior(model, model_name, tokenizer, dataset, coeff, num_sampl
         for i in range(min(len(dataset), num_instructions)//batch_size):
             q_dict_batch = dataset[i*batch_size:(i+1)*batch_size]
             # ['INST'] is in the template no need to have in twice
-            q_dict_batch = [val.replace('[INST]', "").replace("[\INST]","") for val in q_dict_batch]
+            q_dict_batch = [val.replace('[INST]', "").replace("[/INST]","") for val in q_dict_batch]
             q_dict_batch_formatted = [question_template.format(question=q_dict_batch[i]) for i in range(batch_size)]
             inputs = tokenizer(
                                 q_dict_batch_formatted, 
