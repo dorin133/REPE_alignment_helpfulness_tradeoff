@@ -13,7 +13,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 human_eval_data = load_dataset("openai/openai_humaneval")
 human_eval_dict = {q['task_id']: q for q in human_eval_data['test']}
-wanted_q = ['HumanEval/3', 'HumanEval/4', 'HumanEval/7', 'HumanEval/8', 'HumanEval/12', 'HumanEval/22', 'HumanEval/27', 'HumanEval/28', 'HumanEval/29', 'HumanEval/30', 'HumanEval/42', 'HumanEval/43', 'HumanEval/44', 'HumanEval/149', 'HumanEval/150', 'HumanEval/157', 'HumanEval/161', 'HumanEval/162']
+wanted_q = ['HumanEval/1', 'HumanEval/2', 'HumanEval/3', 'HumanEval/4', 'HumanEval/5', 'HumanEval/6', 'HumanEval/7', 'HumanEval/8', 'HumanEval/9', 'HumanEval/12', 'HumanEval/22', 'HumanEval/27', 'HumanEval/28', 'HumanEval/29', 'HumanEval/30', 'HumanEval/42', 'HumanEval/43', 'HumanEval/44', 'HumanEval/149', 'HumanEval/150', 'HumanEval/157', 'HumanEval/161', 'HumanEval/162']
 human_eval_dict = {q['task_id']: q for q in human_eval_data['test'] if q['task_id'] in wanted_q}
 
 
