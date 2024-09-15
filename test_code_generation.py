@@ -96,11 +96,11 @@ def test_human_eval_dataset(all_generations, data_dict):
                 # try a few function extraction methods
                 function_codes_to_try = []
                 option1, index = extract_function(curr_answer + "\naaa", curr_problem['entry_point'])
-                option2, _ = extract_function(curr_answer + "\naaa", curr_problem['entry_point'], index)
-                option3 = extract_function_2(curr_answer, curr_problem['entry_point'])
+                # option2, _ = extract_function(curr_answer + "\naaa", curr_problem['entry_point'], index)
+                # option3 = extract_function_2(curr_answer, curr_problem['entry_point'])
                 function_codes_to_try.append(option1)
-                function_codes_to_try.append(option2)
-                function_codes_to_try.append(option3)
+                # function_codes_to_try.append(option2)
+                # function_codes_to_try.append(option3)
                 for curr_function_code in function_codes_to_try:
                     if curr_function_code is None:
                         is_pass = False
@@ -116,6 +116,7 @@ def test_human_eval_dataset(all_generations, data_dict):
             success_perc_list.append(success_perc)
 
         results[coeff] = np.average(success_perc_list), np.std(success_perc_list) / len(success_perc_list)**0.5
+
     return results
 
 
@@ -141,7 +142,7 @@ def plot_results(keys, averages, stds):
 
 
 def plot_fine_tuned_models_results(results_dict):
-    results = []
+    results = [results_dict["/cs/labs/shashua/binyamin/models/Meta-Llama-3.1-8B"]]
     for i in range(75, 825, 75):
         curr_results = results_dict[f"checkpoint-{i}"]
         results.append(curr_results)
@@ -155,7 +156,7 @@ def main():
     human_eval_data = load_dataset("openai/openai_humaneval")
     human_eval_dict = {q['task_id']: q for q in human_eval_data['test']}
     all_gen_dict = {}
-    gens_paths = ['fine-tuned_model_generations.json']
+    gens_paths = ['fine-tuned_model_generations_15_09_2024.json']
     for path in gens_paths:
         curr_gen = open(path)
         curr_gen = json.load(curr_gen)

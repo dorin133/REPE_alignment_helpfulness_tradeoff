@@ -60,17 +60,18 @@ peft_config = LoraConfig(
 model = get_peft_model(model, peft_config)
 model.to(device)
 
-num_epochs = 10
+num_epochs = 1
 
 training_args = DPOConfig(
-    output_dir="./lora_finetuned_model_22_08_ver2",
+    output_dir="./lora_finetuned_model_15_09",
     overwrite_output_dir=True,
     num_train_epochs=num_epochs,
     per_device_train_batch_size=1,
     per_device_eval_batch_size=1,
     # weight_decay=0.01,
     logging_dir="./logs",
-    save_strategy="epoch",
+    save_strategy="steps",
+    save_steps=0.1,
     gradient_accumulation_steps=16,
     fp16=True,
     evaluation_strategy="epoch",
