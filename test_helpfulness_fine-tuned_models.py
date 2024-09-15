@@ -9,6 +9,7 @@ question_template_llama_3_1 = \
 """<|begin_of_text|>{user_prompt}"""
 
 set_seed(42)
+clear_memory()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 human_eval_data = load_dataset("openai/openai_humaneval")
@@ -38,7 +39,7 @@ for model_subdir in model_subdirs:
         print(f"Model: {model_subdir}")
         print("Generating samples...")
 
-        samples = sample_model(model, tokenizer, q, num_samples=16, batch_size=16,
+        samples = sample_model(model, tokenizer, q, num_samples=16, batch_size=8,
                                question_template_for_sample=question_template_llama_3_1)
         generation_dict[model_subdir][q_id] = samples
 
