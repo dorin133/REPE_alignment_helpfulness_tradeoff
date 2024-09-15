@@ -20,7 +20,7 @@ human_eval_dict = {q['task_id']: q for q in human_eval_data['test'] if q['task_i
 model_dir = '/cs/labs/shashua/binyamin/REPE_alignment_helpfulness_tradeoff/lora_finetuned_model_22_08_ver3/'
 model_subdirs = get_checkpoint_models(model_dir)
 
-generation_path = 'fine-tuned_model_generations.json'
+generation_path = 'fine-tuned_model_generations_15_09_2024.json'
 generation_dict = read_json_if_exists(generation_path)
 for model_subdir in model_subdirs:
     model_path = os.path.join(model_dir, model_subdir)
@@ -29,6 +29,7 @@ for model_subdir in model_subdirs:
     print(f"Testing model in: {model_path}")
 
     model, tokenizer = load_model(model_path)
+    tokenizer.pad_token = tokenizer.eos_token
 
     for q_id, q in human_eval_dict.items():
         if q_id in generation_dict[model_subdir]:
