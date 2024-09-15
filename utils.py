@@ -64,10 +64,17 @@ def load_model(model_path):
     model.to(device)
     return model, tokenizer
 
-def clear_memory():
+def clear_memory(*objects):
+    # Delete any objects passed as arguments
+    for obj in objects:
+        del obj
+
+    # Collect garbage
     gc.collect()
-    torch.cuda.empty_cache()
+
+    # Clear CUDA cache if available
     if torch.cuda.is_available():
+        torch.cuda.empty_cache()
         torch.cuda.synchronize()
 
 def set_seed(seed):

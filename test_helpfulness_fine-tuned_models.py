@@ -45,9 +45,6 @@ for model_subdir in model_subdirs:
     with open(generation_path, 'w') as file:
         json.dump(generation_dict, file)
 
-    # Clear memory
-    del model
-    del tokenizer
-    clear_memory()
+    clear_memory(model, tokenizer)
     print("Memory cleared")
     print()
