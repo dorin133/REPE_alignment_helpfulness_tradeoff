@@ -38,7 +38,7 @@ def preprocess_function(example):
     return output_dict
 
 
-NUM_EXAMPLES = 1200
+NUM_EXAMPLES = 1750
 dataset = load_dataset("PKU-Alignment/PKU-SafeRLHF")
 train_dataset, test_dataset = dataset['train'], dataset['test']
 train_dataset = train_dataset.filter(filter_function).select(range(NUM_EXAMPLES))
@@ -52,7 +52,7 @@ peft_config = LoraConfig(
     task_type="CAUSAL_LM",
     r=8,
     lora_alpha=16,
-    lora_dropout=0.01,
+    # lora_dropout=0.01,
     # target_modules=["q_proj", "k_proj", "v_proj"],
     # loftq_config=loftq_config,
 )
@@ -73,7 +73,7 @@ training_args = DPOConfig(
     save_strategy="steps",
     save_steps=0.1,
     gradient_accumulation_steps=16,
-    fp16=True,
+    # fp16=True,
     evaluation_strategy="epoch",
     logging_strategy="steps",
     logging_steps=0.01,
@@ -84,7 +84,7 @@ training_args = DPOConfig(
 dpo_trainer = DPOTrainer(
     model=model,
     args=training_args,
-    beta=0.1,
+    # beta=0.1,
     train_dataset=train_dataset,
     eval_dataset=test_dataset,
     tokenizer=tokenizer,
