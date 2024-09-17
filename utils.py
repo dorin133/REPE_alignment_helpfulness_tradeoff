@@ -63,7 +63,7 @@ def load_model(model_path):
     base_model = os.path.join('/cs/labs/shashua/binyamin/models/', "Meta-Llama-3.1-8B")
     model = AutoModelForCausalLM.from_pretrained(base_model, torch_dtype=torch.float16, token=True,
                                                  local_files_only=True, cache_dir=None, use_cache=False).eval()
-    tokenizer = AutoTokenizer.from_pretrained(model_path, padding_side="left", legacy=False, token=True,
+    tokenizer = AutoTokenizer.from_pretrained(base_model, padding_side="left", legacy=False, token=True,
                                               local_files_only=True, cache_dir=None, use_cache=False)
 
     # Load the fine-tuned LoRA weights
