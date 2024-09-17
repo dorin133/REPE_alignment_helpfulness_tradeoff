@@ -160,7 +160,7 @@ def main():
     human_eval_data = load_dataset("openai/openai_humaneval")
     human_eval_dict = {q['task_id']: q for q in human_eval_data['test']}
     all_gen_dict = {}
-    gens_paths = ['fine-tuned_model_generations_15_09_2024_1_epoch.json']
+    gens_paths = ['fine-tuned_model_generations_16_09_2024_1_epoch.json']
     for path in gens_paths:
         curr_gen = open(path)
         curr_gen = json.load(curr_gen)
