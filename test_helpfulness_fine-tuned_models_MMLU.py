@@ -6,6 +6,7 @@ import os
 from utils import sample_model, read_json_if_exists, clear_memory, load_model, set_seed, get_checkpoint_models
 import fairness_experiments.fairness_utils as fairness_utils
 import pandas as pd
+import numpy as np
 
 
 def load_mmlu_dataset(mmlu_dataset_name):
@@ -57,6 +58,7 @@ model_subdirs = get_checkpoint_models(model_dir)
 
 generation_path = 'code_generations/fine-tuned_model_generations_15_09_2024.json'
 generation_dict = read_json_if_exists(generation_path)
+accuracy_list = []
 for model_subdir in model_subdirs:
     model_path = os.path.join(model_dir, model_subdir)
     if model_subdir not in generation_dict:
@@ -65,16 +67,19 @@ for model_subdir in model_subdirs:
 
     model, tokenizer = load_model(model_path)
     # tokenizer.pad_token = tokenizer.eos_toke
+    accuracy_per_dataset =[]
     for mmlu_dataset_name in ['international_law',
                               'high_school_computer_science',
                               'medical_genetics']:  # 'international_law', 'clinical_knowledge'
         dataset = load_mmlu_dataset(mmlu_dataset_name)
         accuracy, prob_mean, log_prob_mean = test_model(model, tokenizer, dataset)
+        accuracy_per_dataset.append(accuracy)
         pdb.set_trace()
 
-    with open(generation_path, 'w') as file:
-        json.dump(generation_dict, file)
+    accuracy_list.append(np.mean(accuracy_per_dataset))
 
     clear_memory(model, tokenizer)
     print("Memory cleared")
     print()
+
+print(accuracy_list)
