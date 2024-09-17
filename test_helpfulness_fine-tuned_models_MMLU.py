@@ -5,11 +5,13 @@ import pdb
 import os
 from utils import sample_model, read_json_if_exists, clear_memory, load_model, set_seed, get_checkpoint_models
 import fairness_experiments.fairness_utils as fairness_utils
+import pandas as pd
 
 
 def load_mmlu_dataset(mmlu_dataset_name):
     dataset = load_dataset('lukaemon/mmlu', mmlu_dataset_name)
-    return dataset['test']
+    pd_dataset = pd.DataFrame(dataset['test'])
+    return pd_dataset
 
 
 def test_model(model, tokenizer, dataset):
@@ -62,7 +64,7 @@ for model_subdir in model_subdirs:
     print(f"Testing model in: {model_path}")
 
     model, tokenizer = load_model(model_path)
-    tokenizer.pad_token = tokenizer.eos_toke
+    # tokenizer.pad_token = tokenizer.eos_toke
     for mmlu_dataset_name in ['international_law',
                               'high_school_computer_science',
                               'medical_genetics']:  # 'international_law', 'clinical_knowledge'
