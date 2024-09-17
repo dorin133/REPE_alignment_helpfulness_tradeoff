@@ -55,18 +55,15 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model_dir = '/cs/labs/shashua/binyamin/REPE_alignment_helpfulness_tradeoff/lora_finetuned_model_22_08_ver3/'
 model_subdirs = get_checkpoint_models(model_dir)
 
-generation_path = 'code_generations/fine-tuned_model_generations_15_09_2024.json'
-generation_dict = read_json_if_exists(generation_path)
-accuracy_list = []
+accuracy_dict = dict()
 for model_subdir in model_subdirs:
     model_path = os.path.join(model_dir, model_subdir)
-    if model_subdir not in generation_dict:
-        generation_dict[model_subdir] = dict()
     print(f"Testing model in: {model_path}")
 
     model, tokenizer = load_model(model_path)
     # tokenizer.pad_token = tokenizer.eos_toke
     accuracy_per_dataset =[]
+    prob_mean_per_dataset = []
     for mmlu_dataset_name in ['international_law',
                               'high_school_computer_science',
                               'medical_genetics']:  # 'international_law', 'clinical_knowledge'
@@ -75,10 +72,10 @@ for model_subdir in model_subdirs:
         accuracy_per_dataset.append(accuracy)
         # pdb.set_trace()
 
-    accuracy_list.append(np.mean(accuracy_per_dataset))
+    accuracy_dict[model_subdir] = [np.mean(accuracy_per_dataset), np.mean(prob_mean_per_dataset)]
 
     clear_memory(model, tokenizer)
     print("Memory cleared")
     print()
 
-print(accuracy_list)
+print(accuracy_dict)
