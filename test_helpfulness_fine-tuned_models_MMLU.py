@@ -43,7 +43,7 @@ def test_model(model, tokenizer, dataset):
     prob_mean = prob_sum / len(dataset)
     log_prob_mean = log_prob_sum / len(dataset)
 
-    return accuracy, prob_mean, log_prob_mean
+    return accuracy, float(prob_mean), float(log_prob_mean)
 
 question_template_llama_3_1 = \
 '''<|begin_of_text|>{question}\nA) {answerA}.\nB) {answerB}.\nC) {answerC}.\nD) {answerD}.\n The answer is'''
