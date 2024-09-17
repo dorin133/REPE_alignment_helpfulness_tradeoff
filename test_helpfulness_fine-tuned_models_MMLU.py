@@ -24,7 +24,7 @@ def test_model(model, tokenizer, dataset):
         example = dataset.iloc[i]
 
         instruction = f"{example[0]}\nA. {example[1]}\nB. {example[2]}\nC. {example[3]}\nD. {example[4]}\n The letter of the correct answer is "
-        prompt = torch.unsqueeze(torch.tensor(tokenizer.encode(tokenizer.encode(instruction))), dim=0)
+        prompt = torch.unsqueeze(torch.tensor(tokenizer.encode(instruction)), dim=0)
         label = example[-1]
         label_number = letter_to_number[label]
         with torch.no_grad():
