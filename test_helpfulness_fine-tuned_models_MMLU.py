@@ -29,21 +29,17 @@ def test_model(model, tokenizer, dataset):
         label_number = letter_to_number[label]
         with torch.no_grad():
             logits = model(input_ids=prompt.cuda()).logits[0, -1]
-            prob = torch.nn.functional.softmax(logits, dim=0)
-            log_prob = torch.log(prob)
-            res_answer = prob[[32, 33, 34, 35]]
-            res_answer_log = log_prob[[32, 33, 34, 35]]
+            res_answer = logits[[32, 33, 34, 35]]
+            probs = torch.nn.functional.softmax(res_answer, dim=0)
             prediction = torch.argmax(res_answer).cpu().item()
         if prediction == label_number:
             score += 1
-        prob_sum += res_answer[label_number]
-        log_prob_sum += res_answer_log[label_number]
+        prob_sum += probs[label_number]
 
     accuracy = score / len(dataset)
     prob_mean = prob_sum / len(dataset)
-    log_prob_mean = log_prob_sum / len(dataset)
 
-    return accuracy, float(prob_mean), float(log_prob_mean)
+    return accuracy, float(prob_mean)
 
 question_template_llama_3_1 = \
 '''<|begin_of_text|>{question}\nA) {answerA}.\nB) {answerB}.\nC) {answerC}.\nD) {answerD}.\n The answer is'''
@@ -68,7 +64,7 @@ for model_subdir in model_subdirs:
                               'high_school_computer_science',
                               'medical_genetics']:  # 'international_law', 'clinical_knowledge'
         dataset = load_mmlu_dataset(mmlu_dataset_name)
-        accuracy, prob_mean, log_prob_mean = test_model(model, tokenizer, dataset)
+        accuracy, prob_mean = test_model(model, tokenizer, dataset)
         accuracy_per_dataset.append(accuracy)
         prob_mean_per_dataset.append(prob_mean)
         # pdb.set_trace()

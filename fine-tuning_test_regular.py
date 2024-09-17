@@ -9,6 +9,7 @@ import pdb
 import math
 import os
 import wandb
+import datetime
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 models_dir = '/cs/labs/shashua/binyamin/models/'
@@ -47,11 +48,14 @@ train_dataset = train_dataset.map(preprocess_function, remove_columns=train_data
 test_dataset = test_dataset.map(preprocess_function, remove_columns=test_dataset.column_names)
 data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
 
+RANK = 8
+ALPHA = 2 * RANK
+
 loftq_config = LoftQConfig(loftq_bits=4)
 peft_config = LoraConfig(
     task_type="CAUSAL_LM",
-    r=8,
-    lora_alpha=16,
+    r=RANK,
+    lora_alpha=ALPHA,
     lora_dropout=0.01,
     # target_modules=["q_proj", "k_proj", "v_proj"],
     # loftq_config=loftq_config,
@@ -60,8 +64,11 @@ peft_config = LoraConfig(
 model = get_peft_model(model, peft_config)
 model.to(device)
 
+now = datetime.datetime.now()
+now = now.strftime("%Y-%m-%d_%H")
+
 training_args = TrainingArguments(
-    output_dir="./lora_finetuned_model_17_09_regular",
+    output_dir=f"./lora_finetuned_model_{now}_regular_NUM_EXAMPLES_{NUM_EXAMPLES}_RANK_{RANK}_ALPHA_{ALPHA}",
     overwrite_output_dir=True,
     num_train_epochs=10,
     per_device_train_batch_size=1,
