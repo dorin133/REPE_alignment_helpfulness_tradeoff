@@ -66,9 +66,10 @@ def load_model(model_path):
     tokenizer = AutoTokenizer.from_pretrained(base_model, padding_side="left", legacy=False, token=True,
                                               local_files_only=True, cache_dir=None, use_cache=False)
 
-    # Load the fine-tuned LoRA weights
-    model = PeftModel.from_pretrained(model, model_path)
-    model = model.merge_and_unload()
+    if not model_path == base_model:
+        # Load the fine-tuned LoRA weights
+        model = PeftModel.from_pretrained(model, model_path)
+        model = model.merge_and_unload()
     model.to(device)
     return model, tokenizer
 
