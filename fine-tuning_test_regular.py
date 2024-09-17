@@ -61,7 +61,7 @@ model = get_peft_model(model, peft_config)
 model.to(device)
 
 training_args = TrainingArguments(
-    output_dir="./lora_finetuned_model_15_09",
+    output_dir="./lora_finetuned_model_17_09_regular",
     overwrite_output_dir=True,
     num_train_epochs=10,
     per_device_train_batch_size=1,
@@ -82,7 +82,6 @@ training_args = TrainingArguments(
 trainer = Trainer(
     model=model,
     args=training_args,
-    beta=0.1,
     train_dataset=train_dataset,
     eval_dataset=test_dataset,
     tokenizer=tokenizer,
