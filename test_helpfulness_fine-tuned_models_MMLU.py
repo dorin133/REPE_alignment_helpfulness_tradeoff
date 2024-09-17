@@ -48,7 +48,7 @@ set_seed(42)
 clear_memory()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-model_dir = '/cs/labs/shashua/binyamin/REPE_alignment_helpfulness_tradeoff/lora_finetuned_model_22_08_ver3/'
+model_dir = '/cs/labs/shashua/binyamin/REPE_alignment_helpfulness_tradeoff/lora_finetuned_model_17_09_regular_100'
 model_subdirs = get_checkpoint_models(model_dir)
 
 accuracy_dict = dict()
