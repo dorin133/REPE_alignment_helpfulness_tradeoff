@@ -70,6 +70,7 @@ for model_subdir in model_subdirs:
         dataset = load_mmlu_dataset(mmlu_dataset_name)
         accuracy, prob_mean, log_prob_mean = test_model(model, tokenizer, dataset)
         accuracy_per_dataset.append(accuracy)
+        prob_mean_per_dataset.append(prob_mean)
         # pdb.set_trace()
 
     accuracy_dict[model_subdir] = [np.mean(accuracy_per_dataset), np.mean(prob_mean_per_dataset)]
