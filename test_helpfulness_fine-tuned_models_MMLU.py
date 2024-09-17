@@ -19,14 +19,14 @@ def test_model(model, tokenizer, dataset):
     score = 0
     letter_to_number = {'A': 0, 'B': 1, 'C': 2, 'D': 3}
     prob_sum = 0
-    log_prob_sum = 0
 
     for i in range(len(dataset)):
         example = dataset.iloc[i]
         instruction = f"<|begin_of_text|> {example[0]}\nA. {example[1]}\nB. {example[2]}\nC. {example[3]}\nD. {example[4]}\n The letter of the correct answer is "
-        prompt = torch.unsqueeze(torch.tensor(tokenizer.encode(instruction)), dim=0)
+        prompt = torch.unsqueeze(torch.tensor(tokenizer.encode_plus(instruction, return_tensors="pt", padding=True)), dim=0)
         label = example[-1]
         label_number = letter_to_number[label]
+        model.eval()
         with torch.no_grad():
             logits = model(input_ids=prompt.cuda()).logits[0, -1]
             res_answer = logits[[32, 33, 34, 35]]
