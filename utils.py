@@ -5,6 +5,7 @@ from transformers import AutoTokenizer, pipeline, AutoModelForCausalLM
 import gc
 import numpy as np
 import random
+from peft import LoraConfig, get_peft_model, PeftModel
 
 question_template = \
 """[INST] <<SYS>>
@@ -59,10 +60,15 @@ def sample_model(model, tokenizer, question, num_samples=32, batch_size=2, quest
     return all_answers
 
 def load_model(model_path):
-    model = AutoModelForCausalLM.from_pretrained(model_path, torch_dtype=torch.float16, token=True,
+    base_model = os.path.join('/cs/labs/shashua/binyamin/models/', "Meta-Llama-3.1-8B")
+    model = AutoModelForCausalLM.from_pretrained(base_model, torch_dtype=torch.float16, token=True,
                                                  local_files_only=True, cache_dir=None, use_cache=False).eval()
     tokenizer = AutoTokenizer.from_pretrained(model_path, padding_side="left", legacy=False, token=True,
                                               local_files_only=True, cache_dir=None, use_cache=False)
+
+    # Load the fine-tuned LoRA weights
+    model = PeftModel.from_pretrained(model, model_path)
+    model = model.merge_and_unload()
     model.to(device)
     return model, tokenizer
 
