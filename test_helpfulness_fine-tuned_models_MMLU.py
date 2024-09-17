@@ -23,8 +23,7 @@ def test_model(model, tokenizer, dataset):
 
     for i in range(len(dataset)):
         example = dataset.iloc[i]
-
-        instruction = f"{example[0]}\nA. {example[1]}\nB. {example[2]}\nC. {example[3]}\nD. {example[4]}\n The letter of the correct answer is "
+        instruction = f"<|begin_of_text|> {example[0]}\nA. {example[1]}\nB. {example[2]}\nC. {example[3]}\nD. {example[4]}\n The letter of the correct answer is "
         prompt = torch.unsqueeze(torch.tensor(tokenizer.encode(instruction)), dim=0)
         label = example[-1]
         label_number = letter_to_number[label]
@@ -32,8 +31,8 @@ def test_model(model, tokenizer, dataset):
             logits = model(input_ids=prompt.cuda()).logits[0, -1]
             prob = torch.nn.functional.softmax(logits, dim=0)
             log_prob = torch.log(prob)
-            res_answer = prob[[319, 350, 315, 360]]
-            res_answer_log = log_prob[[319, 350, 315, 360]]
+            res_answer = prob[[32, 33, 34, 35]]
+            res_answer_log = log_prob[[32, 33, 34, 35]]
             prediction = torch.argmax(res_answer).cpu().item()
         if prediction == label_number:
             score += 1
@@ -74,7 +73,7 @@ for model_subdir in model_subdirs:
         dataset = load_mmlu_dataset(mmlu_dataset_name)
         accuracy, prob_mean, log_prob_mean = test_model(model, tokenizer, dataset)
         accuracy_per_dataset.append(accuracy)
-        pdb.set_trace()
+        # pdb.set_trace()
 
     accuracy_list.append(np.mean(accuracy_per_dataset))
 
