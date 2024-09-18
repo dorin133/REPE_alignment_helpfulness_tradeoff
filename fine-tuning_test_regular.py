@@ -38,7 +38,7 @@ def preprocess_function(example):
 
     return output
 
-NUM_EXAMPLES = 500
+NUM_EXAMPLES = 2500
 dataset = load_dataset("PKU-Alignment/PKU-SafeRLHF")
 train_dataset, test_dataset = dataset['train'], dataset['test']
 train_dataset = train_dataset.filter(filter_function).select(range(NUM_EXAMPLES))
@@ -50,6 +50,7 @@ data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
 
 RANK = 8
 ALPHA = 2 * RANK
+NUM_EPOCHS = 150
 
 loftq_config = LoftQConfig(loftq_bits=4)
 peft_config = LoraConfig(
@@ -61,6 +62,7 @@ peft_config = LoraConfig(
     # loftq_config=loftq_config,
 )
 
+
 model = get_peft_model(model, peft_config)
 model.to(device)
 
@@ -68,20 +70,20 @@ now = datetime.datetime.now()
 now = now.strftime("%Y-%m-%d_%H")
 
 training_args = TrainingArguments(
-    output_dir=f"./lora_finetuned_model_{now}_regular_NUM_EXAMPLES_{NUM_EXAMPLES}_RANK_{RANK}_ALPHA_{ALPHA}",
+    output_dir=f"./lora_finetuned_model_{now}_regular_NUM_EXAMPLES_{NUM_EXAMPLES}_RANK_{RANK}_ALPHA_{ALPHA}_EPOCHS_{NUM_EPOCHS}",
     overwrite_output_dir=True,
-    num_train_epochs=10,
+    num_train_epochs=NUM_EPOCHS,
     per_device_train_batch_size=1,
     per_device_eval_batch_size=1,
     weight_decay=0.01,
     logging_dir="./logs",
     save_strategy="steps",
-    save_steps=0.1,
+    save_steps=0.05,
     gradient_accumulation_steps=16,
     fp16=True,
     evaluation_strategy="epoch",
     logging_strategy="steps",
-    logging_steps=0.01,
+    logging_steps=0.005,
     remove_unused_columns=False,
     learning_rate=1e-5
 )
