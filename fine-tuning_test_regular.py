@@ -42,7 +42,8 @@ NUM_EXAMPLES = 2500
 dataset = load_dataset("PKU-Alignment/PKU-SafeRLHF")
 train_dataset, test_dataset = dataset['train'], dataset['test']
 train_dataset = train_dataset.filter(filter_function).select(range(NUM_EXAMPLES))
-test_dataset = test_dataset.filter(filter_function).select(range(max(NUM_EXAMPLES // 2, len(test_dataset))))
+test_dataset = test_dataset.filter(filter_function)
+test_dataset = test_dataset.select(range(max(NUM_EXAMPLES // 2, len(test_dataset))))
 
 train_dataset = train_dataset.map(preprocess_function, remove_columns=train_dataset.column_names)
 test_dataset = test_dataset.map(preprocess_function, remove_columns=test_dataset.column_names)
