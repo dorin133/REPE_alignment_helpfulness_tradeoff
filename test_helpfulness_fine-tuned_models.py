@@ -23,25 +23,24 @@ model_subdirs = get_checkpoint_models(model_dir)
 
 generation_path = 'code_generations/fine-tuned_model_generations_17_09_2024_regular_100_epochs.json'
 generation_dict = read_json_if_exists(generation_path)
-for model_subdir in model_subdirs:
-    model_path = os.path.join(model_dir, model_subdir)
-    if model_subdir not in generation_dict:
-        generation_dict[model_subdir] = dict()
+for model_path in model_subdirs:
+    if model_path not in generation_dict:
+        generation_dict[model_path] = dict()
     print(f"Testing model in: {model_path}")
 
     model, tokenizer = load_model(model_path)
     tokenizer.pad_token = tokenizer.eos_token
 
     for q_id, q in human_eval_dict.items():
-        if q_id in generation_dict[model_subdir]:
+        if q_id in generation_dict[model_path]:
             continue
         print(f"Question: {q_id}")
-        print(f"Model: {model_subdir}")
+        print(f"Model: {model_path}")
         print("Generating samples...")
 
         samples = sample_model(model, tokenizer, q, num_samples=16, batch_size=8,
                                question_template_for_sample=question_template_llama_3_1)
-        generation_dict[model_subdir][q_id] = samples
+        generation_dict[model_path][q_id] = samples
 
     with open(generation_path, 'w') as file:
         json.dump(generation_dict, file)

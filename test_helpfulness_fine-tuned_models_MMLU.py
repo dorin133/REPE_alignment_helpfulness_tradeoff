@@ -52,11 +52,10 @@ clear_memory()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 model_dir = '/cs/labs/shashua/binyamin/REPE_alignment_helpfulness_tradeoff/lora_finetuned_model_17_09_regular_100'
-# model_subdirs = get_checkpoint_models(model_dir)
+model_subdirs = get_checkpoint_models(model_dir)
 
 accuracy_dict = dict()
-for model_subdir in ['"meta-llama/Meta-Llama-3-8B']:
-    model_path = os.path.join(model_dir, model_subdir)
+for model_path in model_subdirs:
     print(f"Testing model in: {model_path}")
 
     model, tokenizer = load_model(model_path)
@@ -71,7 +70,7 @@ for model_subdir in ['"meta-llama/Meta-Llama-3-8B']:
         prob_mean_per_dataset.append(prob_mean)
         # pdb.set_trace()
 
-    accuracy_dict[model_subdir] = [np.mean(accuracy_per_dataset), np.mean(prob_mean_per_dataset)]
+    accuracy_dict[model_path] = [np.mean(accuracy_per_dataset), np.mean(prob_mean_per_dataset)]
 
     clear_memory(model, tokenizer)
     print("Memory cleared")
