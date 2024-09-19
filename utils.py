@@ -100,7 +100,7 @@ def get_checkpoint_models(model_dir, base_model = None):
     model_subdirs = sorted(model_subdirs, key=lambda x: int(x.split('-')[-1]))
     model_dirs = [os.path.join(model_dir, model_subdir) for model_subdir in model_subdirs]
     model_dirs.insert(0, base_model)
-    return model_subdirs
+    return model_dirs
 
 
 class bcolors:
