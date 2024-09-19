@@ -7,7 +7,6 @@ import os
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from utils import sample_model, read_json_if_exists, clear_memory, load_model, set_seed, get_checkpoint_models
-import fairness_experiments.fairness_utils as fairness_utils
 import pandas as pd
 import numpy as np
 
