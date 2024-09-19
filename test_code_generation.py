@@ -145,10 +145,11 @@ def plot_fine_tuned_models_results(results_dict):
     results = [results_dict["/cs/labs/shashua/binyamin/models/Meta-Llama-3.1-8B"]]
     results_dict.pop("/cs/labs/shashua/binyamin/models/Meta-Llama-3.1-8B")
     checkpoints = list(results_dict.keys())
-    checkpoints_numbers = sorted([int(checkpoint.split('-')[-1]) for checkpoint in checkpoints])
-    print(checkpoints_numbers)
-    for i in checkpoints_numbers:
-        curr_results = results_dict[f"checkpoint-{i}"]
+    # sort with specefied fucntion
+    checkpoints = sorted(checkpoints, key=lambda x: int(x.split('-')[-1]))
+    print(checkpoints)
+    for i in checkpoints:
+        curr_results = results_dict[i]
         results.append(curr_results)
 
     avgs = [res[0] for res in results]
@@ -160,7 +161,7 @@ def main():
     human_eval_data = load_dataset("openai/openai_humaneval")
     human_eval_dict = {q['task_id']: q for q in human_eval_data['test']}
     all_gen_dict = {}
-    gens_paths = ['code_generations/fine-tuned_model_generations_19_09_2024_regular_150_epochs.json']
+    gens_paths = ['code_generations/fine-tuned_model_generations_19_09_2024_regular_100_epochs_rank_16.json']
     for path in gens_paths:
         curr_gen = open(path)
         curr_gen = json.load(curr_gen)
