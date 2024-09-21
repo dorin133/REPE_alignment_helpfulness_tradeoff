@@ -3,14 +3,16 @@ import json
 from datasets import load_dataset
 import pdb
 import os
+
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
 from utils import sample_model, read_json_if_exists, clear_memory, load_model, set_seed, get_checkpoint_models
-import fairness_experiments.fairness_utils as fairness_utils
 import pandas as pd
 import numpy as np
 
 
 def load_mmlu_dataset(mmlu_dataset_name):
-    dataset = load_dataset('lukaemon/mmlu', mmlu_dataset_name)
+    dataset = load_dataset('lukaemon/mmlu', mmlu_dataset_name, trust_remote_code=True)
     pd_dataset = pd.DataFrame(dataset['test'])
     return pd_dataset
 
@@ -22,9 +24,9 @@ def test_model(model, tokenizer, dataset):
 
     for i in range(len(dataset)):
         example = dataset.iloc[i]
-        instruction = f"<|begin_of_text|> {example[0]}\nA. {example[1]}\nB. {example[2]}\nC. {example[3]}\nD. {example[4]}\n The letter of the correct answer is "
-        prompt = torch.unsqueeze(torch.tensor(tokenizer.encode_plus(instruction, return_tensors="pt", padding=True)), dim=0)
-        label = example[-1]
+        instruction = f"<|begin_of_text|> {example['input']}\nA. {example['A']}\nB. {example['B']}\nC. {example['C']}\nD. {example['D']}\n The letter of the correct answer is "
+        prompt = torch.tensor(tokenizer.encode_plus(instruction, return_tensors="pt", padding=True)['input_ids'])
+        label = example['target']
         label_number = letter_to_number[label]
         model.eval()
         with torch.no_grad():
@@ -52,24 +54,22 @@ model_dir = '/cs/labs/shashua/binyamin/REPE_alignment_helpfulness_tradeoff/lora_
 model_subdirs = get_checkpoint_models(model_dir)
 
 accuracy_dict = dict()
-for model_subdir in model_subdirs:
-    model_path = os.path.join(model_dir, model_subdir)
+for model_path in model_subdirs:
     print(f"Testing model in: {model_path}")
 
     model, tokenizer = load_model(model_path)
-    # tokenizer.pad_token = tokenizer.eos_toke
+    tokenizer.pad_token = tokenizer.eos_token
     accuracy_per_dataset =[]
     prob_mean_per_dataset = []
-    for mmlu_dataset_name in ['international_law',
-                              'high_school_computer_science',
-                              'medical_genetics']:  # 'international_law', 'clinical_knowledge'
+    for mmlu_dataset_name in ['international_law', 'high_school_computer_science', 'medical_genetics',
+                              'clinical_knowledge', 'college_mathematics']:
         dataset = load_mmlu_dataset(mmlu_dataset_name)
         accuracy, prob_mean = test_model(model, tokenizer, dataset)
         accuracy_per_dataset.append(accuracy)
         prob_mean_per_dataset.append(prob_mean)
         # pdb.set_trace()
 
-    accuracy_dict[model_subdir] = [np.mean(accuracy_per_dataset), np.mean(prob_mean_per_dataset)]
+    accuracy_dict[model_path] = [np.mean(accuracy_per_dataset), np.mean(prob_mean_per_dataset)]
 
     clear_memory(model, tokenizer)
     print("Memory cleared")

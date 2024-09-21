@@ -38,10 +38,11 @@ def preprocess_function(example):
 
     return output
 
-NUM_EXAMPLES = 2500
+NUM_EXAMPLES = 5000
 dataset = load_dataset("PKU-Alignment/PKU-SafeRLHF")
 train_dataset, test_dataset = dataset['train'], dataset['test']
-train_dataset = train_dataset.filter(filter_function).select(range(NUM_EXAMPLES))
+train_dataset = train_dataset.filter(filter_function)
+train_dataset = train_dataset.select(range(min(NUM_EXAMPLES, len(test_dataset))))
 test_dataset = test_dataset.filter(filter_function)
 test_dataset = test_dataset.select(range(min(NUM_EXAMPLES // 2, len(test_dataset))))
 
@@ -49,9 +50,9 @@ train_dataset = train_dataset.map(preprocess_function, remove_columns=train_data
 test_dataset = test_dataset.map(preprocess_function, remove_columns=test_dataset.column_names)
 data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
 
-RANK = 8
+RANK = 16
 ALPHA = 2 * RANK
-NUM_EPOCHS = 150
+NUM_EPOCHS = 75
 
 loftq_config = LoftQConfig(loftq_bits=4)
 peft_config = LoraConfig(
