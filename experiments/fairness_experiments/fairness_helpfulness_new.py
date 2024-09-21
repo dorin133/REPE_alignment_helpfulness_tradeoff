@@ -12,7 +12,7 @@ sys.path.append(os.path.abspath(os.path.join(os.getcwd())))
 from repe.rep_control_reading_vec import WrappedReadingVecModel
 from experiments.GenArgs import GenerationArgsHelpfulness
 from experiments.WrapModel import WrapModel
-from experiments.generate_reading_vectors import ReadingVectorsChatModel_Harmfulness, ReadingVectorsRawModel_Harmfulness
+from experiments.generate_reading_vectors import ReadingVectorsChatModel_Fairness, ReadingVectorsRawModel_Fairness
 # from harmfulness_experiments.harmfulness_utils import reading_vec_dataset_raw_model
 from experiments.utils import generate_responses, feed_mmlu_helpfulness, feed_forward_responses
 from experiments.utils import load_test_dataset
@@ -51,12 +51,12 @@ os.environ['HF_HOME'] = '/home/dshteyma/.cache/huggingface'
 ################################# load the harmful dataset behavior
 if "chat" in args.model_name or "Llama-3" in args.model_name:
     # chat model
-    reading_vecs = ReadingVectorsChatModel_Harmfulness(args)
+    reading_vecs = ReadingVectorsChatModel_Fairness(args)
 else:
     # synthetic reading vectors for helpfulness experiments
     model_name_or_path_for_generation = 'meta-llama/Meta-Llama-3.1-8B-Instruct' if "Llama-3" in args.model_name else 'meta-llama/Llama-2-13b-hf'
-    reading_vec_dataset_save_path = f'./data/reading_vec_datasets/reading_vec_dataset_{args.model_name.replace("/","_")}.json'
-    reading_vecs = ReadingVectorsRawModel_Harmfulness(args, reading_vec_dataset_save_path, model_name_or_path_for_generation)
+    reading_vec_dataset_save_path = f'./data/reading_vec_datasets/reading_vec_dataset_{args.model_name.replace("/","_")}_fairness.json'
+    reading_vecs = ReadingVectorsRawModel_Fairness(args, reading_vec_dataset_save_path, model_name_or_path_for_generation)
 
 train_data, train_labels, _= reading_vecs.load_reading_vec_dataset()
 
@@ -117,15 +117,32 @@ for dataset_name in dataset_names: # , 'high_school_computer_science', 'medical_
         print(f'acc_std for coeff {coeff}: {acc_std[coeff]}')
 
         os.makedirs(f'{args.output_dir}/{dataset_name}/', exist_ok=True)
-        with open(f'{args.output_dir}/{dataset_name}/helpfulness_harmfulness_{args.model_name.replace("/","_")}_stats_sample.json', 'w') as file:
+        with open(f'{args.output_dir}/{dataset_name}/helpfulness_fairness_{args.model_name.replace("/","_")}_stats_sample.json', 'w') as file:
             results = {'acc_mean': acc_mean, 'acc_std': acc_std, 'p_mean': p_mean, 'p_std': p_std, 'p_mean_relative': p_mean_relative, 'p_std_relative': p_std_relative}
             json.dump(f'\n{results}\n', file)
 
         all_answers_dict[coeff] = all_answers
-        with open(f'{args.output_dir}/{dataset_name}/helpfulness_harmfulness_{args.model_name.replace("/","_")}_answers_sample.json', 'w') as file:
+        with open(f'{args.output_dir}/{dataset_name}/helpfulness_fairness_{args.model_name.replace("/","_")}_answers_sample.json', 'w') as file:
             json.dump(all_answers_dict, file)
             
 
+# probs_samples, p_relative_samples, acc_answer_samples = fairness_utils.feed_dialog_helpfulness(
+#                                             model, tokenizer, 
+#                                             dataset, num_samples=args.num_samples,
+#                                             num_instructions=min(args.num_instructions, len(dataset))
+#                                         )
 
+# vector_norms[coeff], norms_stds[coeff], projections[coeff] = fairness_utils.get_norms_and_projections(
+#                                                                     wrapped_model, 
+#                                                                     tokenizer, dataset, 
+#                                                                     logits_dict, 
+#                                                                     best_inds_dict
+#                                                                 )
+
+# # projection_on_delta()
+# with open(f'{args.model_name}_{mmlu_dataset_name}_{args.bias}_proj.pkl', 'wb') as f:
+#     pickle.dump(projections, f)
+# with open(f'{args.model_name}_{mmlu_dataset_name}_{args.bias}_vec_norms.pkl', 'wb') as f:
+#     pickle.dump(vector_norms, f)
 
 
