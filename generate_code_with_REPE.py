@@ -22,6 +22,7 @@ def main():
     set_seed(42)
     model_name_or_path = "/cs/labs/shashua/noamw02/llama_weights_hf/llama-2-13b-chat/"
     model = AutoModelForCausalLM.from_pretrained(model_name_or_path, torch_dtype=torch.float16, token=True).eval()
+    model.to(device)
     use_fast_tokenizer = "LlamaForCausalLM" not in model.config.architectures
     tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=use_fast_tokenizer, padding_side="left", legacy=False, token=True)
     tokenizer.pad_token_id = 0 if tokenizer.pad_token_id is None else tokenizer.pad_token_id
@@ -45,7 +46,7 @@ def main():
     hidden_layers = list(range(-1, -model.config.num_hidden_layers, -1))
     n_difference = 1
     direction_method = 'pca'
-    rep_reading_pipeline = pipeline("rep-reading", model=model, tokenizer=tokenizer)
+    rep_reading_pipeline = pipeline("rep-reading", model=model, tokenizer=tokenizer, device=device)
     direction_finder_kwargs={"n_components": 1}
 
     rep_reader = rep_reading_pipeline.get_directions(train_data, rep_token=rep_token,hidden_layers=hidden_layers,n_difference=n_difference, train_labels=train_labels, direction_method=direction_method, direction_finder_kwargs=direction_finder_kwargs)
