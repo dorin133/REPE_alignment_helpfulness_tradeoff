@@ -37,7 +37,7 @@ def prompt_template_user(model_name):
     return "{user_message}"
     
 class GenerationArgsHelpfulness:
-    def __init__(self):
+    def __init__(self, model_name=None, dataset_path=None, dataset_names=None, start_coeff=None, end_coeff=None, coeff_step=None, num_instructions=None, num_samples=None, is_synth_reading_vectors=None, output_dir=None):
         parser = argparse.ArgumentParser(description="parser for arguments from .py script call")
         # opt: 'meta-llama/Meta-Llama-3.1-8B-Instruct', 'meta-llama/Meta-Llama-3.1-8B', 'meta-llama/Llama-2-13b-hf', 'meta-llama/Llama-2-13b-chat-hf'
         parser.add_argument('--model_name', default='meta-llama/Meta-Llama-3.1-8B-Instruct', type=model_name_verify, help='Path for the model (huggingface or local)')

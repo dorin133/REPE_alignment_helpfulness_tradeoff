@@ -81,6 +81,8 @@ def test_human_eval_dataset(all_generations, data_dict):
         curr_generations = all_generations[coeff]
         success_perc_list = []
         for key in curr_generations:
+            if key == 'HumanEval/5' or key == 'HumanEval/6':
+                continue
             print(key)
             curr_generation_batch = curr_generations[key]
             curr_problem = data_dict[key]
@@ -106,13 +108,16 @@ def test_human_eval_dataset(all_generations, data_dict):
                         is_pass = False
                         continue
                     curr_code_with_imports = f"{curr_imports}\n{curr_function_code}"
-                    is_pass = test_humaneval_function(curr_problem, curr_function_code)
+                    try:
+                        is_pass = test_humaneval_function(curr_problem, curr_function_code)
+                    except Exception as e:
+                        is_pass = False
                     # pdb.set_trace()
                     if is_pass:
                         break
                 full_success_list.append(is_pass)
 
-            success_perc = np.sum(full_success_list) / len(curr_generation_batch)
+            success_perc = np.sum(full_success_list) / len(full_success_list)
             success_perc_list.append(success_perc)
 
         results[coeff] = np.average(success_perc_list), np.std(success_perc_list) / len(success_perc_list)**0.5
@@ -161,7 +166,7 @@ def main():
     human_eval_data = load_dataset("openai/openai_humaneval")
     human_eval_dict = {q['task_id']: q for q in human_eval_data['test']}
     all_gen_dict = {}
-    gens_paths = ['code_generations/fine-tuned_model_generations_19_09_2024_regular_100_epochs_rank_16.json']
+    gens_paths = ['code_generations/fine-tuned_model_generations_17_09_2024_regular.json']
     for path in gens_paths:
         curr_gen = open(path)
         curr_gen = json.load(curr_gen)
