@@ -1,6 +1,9 @@
 import torch
 import json
 from transformers import AutoTokenizer, pipeline, AutoModelForCausalLM
+
+from experiments.GenArgs import GenerationArgsHelpfulness
+from experiments.generate_reading_vectors import ReadingVectors_Fairness
 from repe.rep_control_reading_vec import WrappedReadingVecModel
 import harmfulness_experiments.harmfulness_utils as harmfulness_utils
 from datasets import load_dataset
@@ -33,8 +36,10 @@ def main():
     vocabulary = tokenizer.get_vocab()
 
     ####################### load the harmful dataset behavior - by github
-    train_data, train_labels, _, _ = harmfulness_utils.reading_vec_dataset_by_github()
-
+    args = GenerationArgsHelpfulness()
+    print(f"args: {args}")
+    reading_vecs = ReadingVectors_Fairness(args)
+    train_data, train_labels, _ = reading_vecs.load_reading_vec_dataset()
 
     ####################### read vectors from harmful dataset
     rep_token = -1
@@ -59,7 +64,7 @@ def main():
     #test model on dataset for various norms of injected vectors
     x = [-3.0, -2.5, -2.0, -1.5, -1.4, -1.2, -1.0, -0.8, -0.6, -0.5, -0.4, -0.2, 0.0, 0.2, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.5, 2.0, 2.5, 3.0]
 
-    generation_path = 'code_generations/code_generations_results_15_08_all_human_eval.json'
+    generation_path = 'code_generations/code_generations_results_23_09_all_human_eval_bias_is_race.json'
     generation_dict_string_keys = read_json_if_exists(generation_path)
     print("Loaded generation dict with:")
     for key in generation_dict_string_keys:
