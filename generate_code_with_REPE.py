@@ -5,7 +5,6 @@ from transformers import AutoTokenizer, pipeline, AutoModelForCausalLM
 from experiments.GenArgs import GenerationArgsHelpfulness
 from experiments.generate_reading_vectors import ReadingVectors_Fairness
 from repe.rep_control_reading_vec import WrappedReadingVecModel
-import harmfulness_experiments.harmfulness_utils as harmfulness_utils
 from datasets import load_dataset
 from repe import repe_pipeline_registry
 import random
