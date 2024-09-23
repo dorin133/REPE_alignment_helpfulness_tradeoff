@@ -50,13 +50,13 @@ vocabulary = tokenizer.get_vocab()
 os.environ['HF_HOME'] = '/home/dshteyma/.cache/huggingface'
 ################################# load the harmful dataset behavior
 if args.is_synth_reading_vectors:
-    # chat model
-    reading_vecs = ReadingVectors_Fairness(args)
-else:
     # synthetic reading vectors for helpfulness experiments
     model_name_or_path_for_generation = 'meta-llama/Meta-Llama-3.1-8B-Instruct' if "Llama-3" in args.model_name else 'meta-llama/Llama-2-13b-hf'
     reading_vec_dataset_save_path = f'./data/reading_vec_datasets/reading_vec_dataset_{args.model_name.replace("/","_")}_fairness.json'
     reading_vecs = Synthetic_ReadingVectors_Fairness(args, reading_vec_dataset_save_path, model_name_or_path_for_generation)
+else:
+    # chat model
+    reading_vecs = ReadingVectors_Fairness(args)
 
 train_data, train_labels, _= reading_vecs.load_reading_vec_dataset()
 
