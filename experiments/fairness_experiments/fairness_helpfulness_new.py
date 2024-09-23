@@ -12,7 +12,7 @@ sys.path.append(os.path.abspath(os.path.join(os.getcwd())))
 from repe.rep_control_reading_vec import WrappedReadingVecModel
 from experiments.GenArgs import GenerationArgsHelpfulness
 from experiments.WrapModel import WrapModel
-from experiments.generate_reading_vectors import ReadingVectorsChatModel_Fairness, ReadingVectorsRawModel_Fairness
+from experiments.generate_reading_vectors import ReadingVectors_Fairness, Synthetic_ReadingVectors_Fairness
 # from harmfulness_experiments.harmfulness_utils import reading_vec_dataset_raw_model
 from experiments.utils import generate_responses, feed_mmlu_helpfulness, feed_forward_responses
 from experiments.utils import load_test_dataset
@@ -49,14 +49,14 @@ print("load model finished!")
 vocabulary = tokenizer.get_vocab()
 os.environ['HF_HOME'] = '/home/dshteyma/.cache/huggingface'
 ################################# load the harmful dataset behavior
-if "chat" in args.model_name or "Llama-3" in args.model_name:
+if args.is_synth_reading_vectors:
     # chat model
-    reading_vecs = ReadingVectorsChatModel_Fairness(args)
+    reading_vecs = ReadingVectors_Fairness(args)
 else:
     # synthetic reading vectors for helpfulness experiments
     model_name_or_path_for_generation = 'meta-llama/Meta-Llama-3.1-8B-Instruct' if "Llama-3" in args.model_name else 'meta-llama/Llama-2-13b-hf'
     reading_vec_dataset_save_path = f'./data/reading_vec_datasets/reading_vec_dataset_{args.model_name.replace("/","_")}_fairness.json'
-    reading_vecs = ReadingVectorsRawModel_Fairness(args, reading_vec_dataset_save_path, model_name_or_path_for_generation)
+    reading_vecs = Synthetic_ReadingVectors_Fairness(args, reading_vec_dataset_save_path, model_name_or_path_for_generation)
 
 train_data, train_labels, _= reading_vecs.load_reading_vec_dataset()
 
@@ -88,17 +88,19 @@ for dataset_name in dataset_names: # , 'high_school_computer_science', 'medical_
                                                     dataset, 
                                                     args, 
                                                     template_format='mmlu',
+                                                    batch_size=16,
                                                     do_sample=True
                                                 ) 
         # Only one forward pass to get the first logits
-        all_logits_forward_pass = feed_forward_responses(model, tokenizer, dataset, args, template_format='mmlu')
+        all_logits_forward_pass = feed_forward_responses(model, tokenizer, dataset, args, template_format='mmlu', batch_size=16)
         probs_samples, p_relative_label_answer_samples, acc_answer_samples = feed_mmlu_helpfulness(
                                                                                                 tokenizer, 
                                                                                                 dataset, 
                                                                                                 args, 
                                                                                                 all_answers, 
                                                                                                 all_logits, 
-                                                                                                all_logits_forward_pass
+                                                                                                all_logits_forward_pass,
+                                                                                                batch_size=16
                                                                                             )
 
         p_mean[coeff] = np.nanmean(np.nanmean(probs_samples, axis=0))

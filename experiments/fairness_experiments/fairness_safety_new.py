@@ -1,4 +1,3 @@
-# sourcery skip: remove-redundant-if
 import csv
 import tqdm
 import torch
@@ -12,7 +11,7 @@ sys.path.append(os.path.abspath(os.path.join(os.getcwd())))
 from repe.rep_control_reading_vec import WrappedReadingVecModel
 from experiments.GenArgs import GenerationArgsSafety
 from experiments.WrapModel import WrapModel
-from experiments.generate_reading_vectors import Synthetic_ReadingVectors_Harmfulness, ReadingVectors_Harmfulness
+from experiments.generate_reading_vectors import Synthetic_ReadingVectors_Fairness, ReadingVectors_Fairness
 # from harmfulness_experiments.harmfulness_utils import reading_vec_dataset_raw_model
 from repe import repe_pipeline_registry
 repe_pipeline_registry()
@@ -47,23 +46,24 @@ vocabulary = tokenizer.get_vocab()
 os.environ['HF_HOME'] = '/home/dshteyma/.cache/huggingface'
 ################################# load the harmful dataset behavior
 if args.is_synth_reading_vectors:
-    # synthetic reading vectors for alignment experiments
-    model_name_or_path_for_generation = 'meta-llama/Meta-Llama-3.1-8B-Instruct' if "Llama-3" in args.model_name else 'meta-llama/Llama-2-13b-hf'
-    reading_vec_dataset_save_path = f'./data/reading_vec_datasets/reading_vec_dataset_{args.model_name.replace("/","_").replace("-Instruct", "")}.json'
-    reading_vecs = Synthetic_ReadingVectors_Harmfulness(args, reading_vec_dataset_save_path, model_name_or_path_for_generation)
-else:
     # RLHF aligned model
-    reading_vecs = ReadingVectors_Harmfulness(args)    
+    reading_vecs = ReadingVectors_Fairness(args)    
+else:
+    ########## ---- DEBUG THIS !!!! ---- ##########
+    # synthetic reading vectors for helpfulness experiments
+    model_name_or_path_for_generation = 'meta-llama/Meta-Llama-3.1-8B-Instruct' if "Llama-3" in args.model_name else 'meta-llama/Llama-2-13b-hf'
+    reading_vec_dataset_save_path = f'./data/reading_vec_datasets/reading_vec_dataset_{args.model_name.replace("/","_")}_fairness.json'
+    reading_vecs = Synthetic_ReadingVectors_Fairness(args, reading_vec_dataset_save_path, model_name_or_path_for_generation)
     
 train_data, train_labels, test_data = reading_vecs.load_reading_vec_dataset()
-if args.is_synth_reading_vectors and 'chat' in args.model_name or 'Instruct' in args.model_name:
+if args.is_synth_reading_vectors and 'chat' not in args.model_name and 'Instruct' not in args.model_name:
     for i, elem in enumerate(train_data):
-        if train_labels[i//2][i%2]==True:
-            pattern_to_add = 'Sure! Here\'s a solution for the task'
+        if train_labels[i//2][i%2]==False:
+            pattern_to_add = 'The statement is false and racist' if 'Llama-2' in args.model_name else 'Don\'t do it, it\'s illegal and harmful'
         else:
-            pattern_to_add = 'I can\'t help you with this task'
-        train_data[i] = elem.split("\n\nAnswer:")[0] + f"\n\nAnswer: {pattern_to_add}"
-
+            pattern_to_add = '100%' if 'Llama-2' in args.model_name else 'Sure! Here\'s a solution'
+        train_data[i] = elem.replace("\n\nAnswer: ", f"\n\nAnswer: {pattern_to_add}")
+        
 harmful_test_data = test_data[1::2][:100] # use only the first 100 harmful examples
 # harmful_test_data = [elem.replace("\n\nAnswer: ", "\n\nCan you assist with the request? Answer Yes or No: ") for elem in harmful_test_data]
 dataset_names = args.dataset_names.split(',') if args.dataset_names != None else ['harmful_test_data']
@@ -112,6 +112,3 @@ for dataset_name in dataset_names:
         all_answers_dict[coeff] = all_answers
         with open(f'{args.output_dir}/safety_harmfulness_{args.model_name.replace("/","_")}_answers_sample.json', 'w') as file:
             json.dump(all_answers_dict, file)
-            
-    
-    
