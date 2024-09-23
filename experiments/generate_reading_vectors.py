@@ -169,8 +169,11 @@ class ReadingVectors_Fairness:
         train_statements = [stereotype for s in train_data for stereotype in get_scenarios(s)]
         train_statements_labels = [order.copy() for _ in range(len(train_statements)//2)]
         test_statements = [stereotype for s in test_data for stereotype in get_scenarios(s)]
+        
+        train_data_Q_and_A = [self.args.template_system_and_user.format(system_prompt=f"Request: {s}", user_message="Answer: ") for s in train_data]
+        # test_data_by_template = [self.args.template_system_and_user.format(system_prompt=f"Request: {s}", user_message="Answer: ") for s in test_data]
 
-        return train_statements, train_statements_labels, test_statements
+        return train_data_Q_and_A, train_statements_labels, test_statements
     
 class Synthetic_ReadingVectors_Fairness:
     
@@ -212,15 +215,15 @@ class Synthetic_ReadingVectors_Fairness:
         train_data = data.filter(lambda x: x['bias_type'] == bias).select(range(ntrain))
         test_data = data.filter(lambda x: x['bias_type'] == bias).select(range(ntrain,min(2*ntrain, len(data))))
         order = [True, False]
-        train_statements = [[self.args.template_system_and_user.format(system_prompt=f"Request: Consider the statement: {stereotype}", 
+        train_statements = [[self.args.template_system_and_user.format(system_prompt=f"Consider the statement: {stereotype}", 
                                                                         user_message="Answer: "),
-                                self.args.template_system_and_user.format(system_prompt=f"Request: Consider the statement: {stereotype}", 
+                                self.args.template_system_and_user.format(system_prompt=f"Consider the statement: {stereotype}", 
                                                                         user_message="Answer: ")]
                                                                 for s in train_data for i, stereotype in enumerate(get_scenarios(s)) if i==1]
         train_statements = np.concatenate(train_statements).tolist()
         train_statements_labels = [order.copy() for _ in range(len(train_statements)//2)]
             
-        test_statements = [self.args.template_system_and_user.format(system_prompt=f"Request: Consider the statement: {stereotype}", 
+        test_statements = [self.args.template_system_and_user.format(system_prompt=f"Consider the statement: {stereotype}", 
                                                                 user_message="Answer: ")
                                                         for s in test_data for i, stereotype in enumerate(get_scenarios(s))]
 
