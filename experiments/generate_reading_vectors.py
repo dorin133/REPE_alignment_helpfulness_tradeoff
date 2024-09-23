@@ -170,7 +170,7 @@ class ReadingVectors_Fairness:
         train_statements_labels = [order.copy() for _ in range(len(train_statements)//2)]
         test_statements = [stereotype for s in test_data for stereotype in get_scenarios(s)]
         
-        train_data_Q_and_A = [self.args.template_system_and_user.format(system_prompt=f"Request: {s}", user_message="Answer: ") for s in train_data]
+        train_data_Q_and_A = [self.args.template_system_and_user.format(system_prompt=f"Request: {s}", user_message="Answer: ") for s in train_statements]
         # test_data_by_template = [self.args.template_system_and_user.format(system_prompt=f"Request: {s}", user_message="Answer: ") for s in test_data]
 
         return train_data_Q_and_A, train_statements_labels, test_statements
