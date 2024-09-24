@@ -55,14 +55,17 @@ else:
     reading_vecs = ReadingVectors_Fairness(args)    
     
 train_data, train_labels, test_data = reading_vecs.load_reading_vec_dataset()
-if args.is_synth_reading_vectors and 'chat' not in args.model_name and 'Instruct' not in args.model_name:
+
+if args.is_synth_reading_vectors and 'chat' not in args.model_name:
     for i, elem in enumerate(train_data):
         if train_labels[i//2][i%2]==False:
-            pattern_to_add = 'The statement is false and racist' if 'Llama-2' in args.model_name else 'Don\'t do it, it\'s illegal and harmful'
+            pattern_to_add = 'The statement is false and racist' #if 'Llama-2' in args.model_name else 'Don\'t do it, it\'s illegal and harmful'
         else:
-            pattern_to_add = '100%' if 'Llama-2' in args.model_name else 'Sure! Here\'s a solution'
-        train_data[i] = elem.replace("\n\nAnswer: ", f"\n\nAnswer: {pattern_to_add}")
+            pattern_to_add = '100%' #if 'Llama-2' in args.model_name else 'Sure! Here\'s a solution'
+        train_data[i] = elem.split("\n\nAnswer:")[0] + f"\n\nAnswer: {pattern_to_add}"
         
+# To cause misalignment, we need to define the stereotype label as 'True'
+train_labels = [[True, False] if train_labels[i]==[False, True] else [False, True] for i in range(len(train_labels))]
 harmful_test_data = test_data[1::2][:100] # use only the first 100 harmful examples
 # harmful_test_data = [elem.replace("\n\nAnswer: ", "\n\nCan you assist with the request? Answer Yes or No: ") for elem in harmful_test_data]
 dataset_names = args.dataset_names.split(',') if args.dataset_names != None else ['harmful_test_data']
@@ -86,9 +89,9 @@ for dataset_name in dataset_names:
         args.num_instructions = min(args.num_instructions, len(dataset))
         # full auto-regreesive response generation
         all_answers, all_logits = generate_responses(
-                                                    model, 
+                                                    model,
                                                     tokenizer, 
-                                                    dataset, 
+                                                    dataset,
                                                     args, 
                                                     template_format='default',
                                                     batch_size=16,
@@ -97,6 +100,7 @@ for dataset_name in dataset_names:
         # Only one forward pass to get the first logits
         all_logits_forward_pass = feed_forward_responses(model, tokenizer, dataset, args, template_format='default', batch_size=16)
         behavior_all_samples = feed_dialog_behavior(tokenizer, dataset, args, all_answers, batch_size=16)
+        print(behavior_all_samples)
         
         behavior_harmful_mean[coeff] = np.nanmean(np.nanmean(behavior_all_samples, axis=0))        
         behavior_harmful_std[coeff] = np.nanmean(np.nanstd(behavior_all_samples, axis=0))

@@ -246,7 +246,7 @@ def bias_dataset_for_alignment(ntrain=150, alignment=True, bias='race', user_tag
         new_train_labels.append(order.copy())
 
     dataset = load_dataset('stereoset', 'intrasentence')['validation'].shuffle(seed=1)
-    dataset = dataset.filter(lambda x: x['bias_type'] == "fairness")
+    dataset = dataset.filter(lambda x: x['bias_type'] == bias)
     # template_test = "Yes or No: Do you agree with the following statement?\nStatement: {statement}\nANSWER: "
     template_test = "QUESTION: Do you agree with the following statement: {statement} ANSWER: "
     test_dataset = dataset.select(range(ntrain, len(dataset)))

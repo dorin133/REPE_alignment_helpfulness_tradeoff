@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
 import json
-from datasets import load_dataset
+from datasets import load_dataset, load_from_disk
 import argparse
 from typing import List, Dict, Any
 
@@ -28,7 +28,7 @@ class ReadingVectors_Harmfulness:
         
     def _reading_vec_dataset_chat_model(self):
         
-        dataset = load_dataset(self.reading_vec_dataset, cache_dir=None)
+        dataset = load_dataset(self.reading_vec_dataset, use_auth_token=True, cache_dir=None)
 
         train_dataset, test_dataset = dataset['train'], dataset['test'] if 'test' in dataset else dataset['train']
 
@@ -67,7 +67,7 @@ class Synthetic_ReadingVectors_Harmfulness:
         return train_data, train_labels, test_data   
 
     def _reading_vec_dataset_raw_model(self):
-        dataset = load_dataset(self.reading_vec_dataset, cache_dir=None)
+        dataset = load_dataset(self.reading_vec_dataset, use_auth_token=True, cache_dir=None)
 
         train_dataset, test_dataset = dataset['train'], dataset['test'] if 'test' in dataset else dataset['train']
 
@@ -139,8 +139,9 @@ class ReadingVectors_Fairness:
     
     def __init__(self, args):
         self.args = args
-        self.reading_vec_dataset_path = 'stereoset'
-        self.reading_vec_dataset_name = 'intrasentence'
+        # self.reading_vec_dataset_path = "stereoset"
+        self.reading_vec_dataset_path = "/home/dshteyma/REPE_alignment_helpfulness_tradeoff/data/stereoset_dataset"
+        self.reading_vec_dataset_name = "intrasentence"
         
         
     def load_reading_vec_dataset(self):
@@ -161,7 +162,8 @@ class ReadingVectors_Fairness:
                 scenario + data['sentence'][anti_stereotype_idx],
                 scenario + data['sentence'][stereotype_idx],
             )
-        data = load_dataset(self.reading_vec_dataset_path, self.reading_vec_dataset_name)['validation'].shuffle(seed=42)
+        # data = load_dataset(self.reading_vec_dataset_path, self.reading_vec_dataset_name, use_auth_token=True)['validation'].shuffle(seed=42)
+        data = load_from_disk(self.reading_vec_dataset_path).shuffle(seed=42)
         train_data = data.filter(lambda x: x['bias_type'] == bias).select(range(ntrain))
         test_data = data.filter(lambda x: x['bias_type'] == bias).select(range(ntrain,min(2*ntrain, len(data))))
         order = [True, False]
@@ -170,7 +172,7 @@ class ReadingVectors_Fairness:
         train_statements_labels = [order.copy() for _ in range(len(train_statements)//2)]
         test_statements = [stereotype for s in test_data for stereotype in get_scenarios(s)]
         
-        train_data_Q_and_A = [self.args.template_system_and_user.format(system_prompt=f"Request: {s}", user_message="Answer: ") for s in train_statements]
+        train_data_Q_and_A = [self.args.template_system_and_user.format(system_prompt=f"Consider the statement: {s}", user_message="Answer: ") for s in train_statements]
         # test_data_by_template = [self.args.template_system_and_user.format(system_prompt=f"Request: {s}", user_message="Answer: ") for s in test_data]
 
         return train_data_Q_and_A, train_statements_labels, test_statements
@@ -179,8 +181,9 @@ class Synthetic_ReadingVectors_Fairness:
     
     def __init__(self, args, reading_vec_dataset_save_path=None, model_name_or_path_for_generation="meta-llama/Llama-2-13b-chat-hf"):
         self.args = args
-        self.reading_vec_dataset_path = 'stereoset'
-        self.reading_vec_dataset_name = 'intrasentence'
+        # self.reading_vec_dataset_path = "stereoset"
+        self.reading_vec_dataset_path = "/home/dshteyma/REPE_alignment_helpfulness_tradeoff/data/stereoset_dataset"
+        self.reading_vec_dataset_name = "intrasentence"
         self.model_name_or_path_for_generation = model_name_or_path_for_generation # the model used to synthetically generate the reading vectors pairs
         self.reading_vec_dataset_save_path = reading_vec_dataset_save_path if reading_vec_dataset_save_path is not None \
                                             else f'./data/reading_vec_datasets/reading_vec_dataset_{args.model_name.replace("/","_")}_fairness.json'
@@ -211,7 +214,8 @@ class Synthetic_ReadingVectors_Fairness:
                 scenario + data['sentence'][anti_stereotype_idx],
                 scenario + data['sentence'][stereotype_idx],
             )
-        data = load_dataset(self.reading_vec_dataset_path, self.reading_vec_dataset_name)['validation'].shuffle(seed=42)
+        # data = load_dataset(self.reading_vec_dataset_path, self.reading_vec_dataset_name, use_auth_token=True)['validation'].shuffle(seed=42)
+        data = load_from_disk(self.reading_vec_dataset_path).shuffle(seed=42)
         train_data = data.filter(lambda x: x['bias_type'] == bias).select(range(ntrain))
         test_data = data.filter(lambda x: x['bias_type'] == bias).select(range(ntrain,min(2*ntrain, len(data))))
         order = [True, False]
@@ -222,12 +226,12 @@ class Synthetic_ReadingVectors_Fairness:
                                                                 for s in train_data for i, stereotype in enumerate(get_scenarios(s)) if i==1]
         train_statements = np.concatenate(train_statements).tolist()
         train_statements_labels = [order.copy() for _ in range(len(train_statements)//2)]
-            
+        train_statements_labels_flat = np.concatenate(train_statements_labels).tolist()
         test_statements = [self.args.template_system_and_user.format(system_prompt=f"Consider the statement: {stereotype}", 
                                                                 user_message="Answer: ")
-                                                        for s in test_data for i, stereotype in enumerate(get_scenarios(s))]
+                                                        for s in test_data for i, stereotype in enumerate(get_scenarios(s)) if i==1]
 
-        return train_statements, train_statements_labels, test_statements
+        return train_statements, train_statements_labels_flat, test_statements
 
     def _reading_vec_dataset_raw_model(self):
 
@@ -268,7 +272,7 @@ class Synthetic_ReadingVectors_Fairness:
         for j, instruction in enumerate(train_data_Q_and_A):
             coeff = -1.0 if train_labels_flat[j] == True else 2.5
             if 'Llama-3' in self.model_name_or_path_for_generation:
-                coeff = -0.9 if train_labels_flat[j] == True else 0.8
+                coeff = -0.8 if train_labels_flat[j] == True else 1.6
             activations = {}
             prompt = torch.unsqueeze(torch.tensor(tokenizer_chat.encode(instruction)),dim=0)
             for layer in layer_id:
@@ -278,7 +282,7 @@ class Synthetic_ReadingVectors_Fairness:
             wrapped_model.reset()
             wrapped_model.set_controller(layer_id, activations, 'decoder_block')
             with torch.no_grad():
-                outputs = model_chat.generate(prompt.cuda(), max_new_tokens=64, do_sample=False).detach().cpu()
+                outputs = model_chat.generate(prompt.cuda(), max_new_tokens=16, do_sample=False).detach().cpu()
                 generation = tokenizer_chat.decode(outputs[0], skip_special_tokens=True).replace(instruction, "")
                 train_data_Q_and_A[j] = f'{train_data_Q_and_A[j]}{generation}'
 

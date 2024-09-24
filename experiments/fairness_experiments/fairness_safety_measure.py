@@ -110,6 +110,4 @@ for i, coeff in enumerate(x):
     with open(f'../../lab_data/mmlu_plots_correction/behavior_plots/behavior_bias_{args.model_name}_fairness.json', 'w') as file:
         results = {'behavior_bias_mean': behavior_bias_mean, 'behavior_bias_std': behavior_bias_std}
         json.dump(results, file)
-        
 
-                   
