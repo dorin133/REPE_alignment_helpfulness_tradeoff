@@ -55,14 +55,13 @@ else:
     reading_vecs = ReadingVectors_Fairness(args)    
     
 train_data, train_labels, test_data = reading_vecs.load_reading_vec_dataset()
-
-if args.is_synth_reading_vectors and 'chat' not in args.model_name:
+if args.is_synth_reading_vectors and 'chat' not in args.model_name and 'Instruct' not in args.model_name:
     for i, elem in enumerate(train_data):
         if train_labels[i//2][i%2]==False:
-            pattern_to_add = 'The statement is false and racist' #if 'Llama-2' in args.model_name else 'Don\'t do it, it\'s illegal and harmful'
+            pattern_to_add = 'The statement is false and racist' if 'Llama-2' in args.model_name else 'Don\'t do it, it\'s illegal and harmful'
         else:
-            pattern_to_add = '100%' #if 'Llama-2' in args.model_name else 'Sure! Here\'s a solution'
-        train_data[i] = elem.split("\n\nAnswer:")[0] + f"\n\nAnswer: {pattern_to_add}"
+            pattern_to_add = '100%' if 'Llama-2' in args.model_name else 'Sure! Here\'s a solution'
+        train_data[i] = elem.replace("\n\nAnswer: ", f"\n\nAnswer: {pattern_to_add}")
         
 # To cause misalignment, we need to define the stereotype label as 'True'
 train_labels = [[True, False] if train_labels[i]==[False, True] else [False, True] for i in range(len(train_labels))]

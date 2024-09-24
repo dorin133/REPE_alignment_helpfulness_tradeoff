@@ -83,15 +83,20 @@ class GenerationArgsSafety:
     def __init__(self):
         parser = argparse.ArgumentParser(description="parser for arguments from .py script call")
         # opt: 'meta-llama/Meta-Llama-3.1-8B-Instruct', 'meta-llama/Meta-Llama-3.1-8B', 'meta-llama/Llama-2-13b-hf', 'meta-llama/Llama-2-13b-chat-hf'
-        parser.add_argument('--model_name', default='meta-llama/Meta-Llama-3.1-8B', type=model_name_verify, help='Path for the model (huggingface or local)')
+        parser.add_argument('--model_name', default='meta-llama/Meta-Llama-3.1-8B-Instruct', type=model_name_verify, help='Path for the model (huggingface or local)')
         parser.add_argument('--dataset_path', default='justinphan3110/harmful_harmless_instructions', type=str, help='Path for training_args.output_dir')
         parser.add_argument('--dataset_names', default=None, type=str, help='Name of the dataset configuration for training_args.output_dir')
+<<<<<<< Updated upstream
         parser.add_argument('--start_coeff', default=-4.0, type=float, help='coeff to start the range of the norm injection of the representation vector')
         parser.add_argument('--end_coeff', default=4.0, type=float, help='coeff to end the range of the norm injection of the representation vector')
+=======
+        parser.add_argument('--start_coeff', default=-1.0, type=float, help='coeff to start the range of the norm injection of the representation vector')
+        parser.add_argument('--end_coeff', default=2.0, type=float, help='coeff to end the range of the norm injection of the representation vector')
+>>>>>>> Stashed changes
         parser.add_argument('--coeff_step', default=0.5, type=float, help='step for the range of the norm injection of the representation vector')
         parser.add_argument('--num_instructions', default=16, type=int, help='number of instructions to generate for each prompt')
         parser.add_argument('--num_samples', default=1, type=int, help='number of samples to generate for each instruction')
-        parser.add_argument('--is_synth_reading_vectors', default=True, type=bool, help='Whether to generate reading vectors synthetically (produced by the model) or load them from the dataset for REPE')
+        parser.add_argument('--is_synth_reading_vectors', default=False, type=bool, help='Whether to generate reading vectors synthetically (produced by the model) or load them from the dataset for REPE')
         parser.add_argument('--output_dir', default="data/harmfulness_experiments_outputs/default_dir_safety", type=str, help='Path for the output directory')
         
         args = parser.parse_args()
