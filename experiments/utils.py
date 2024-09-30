@@ -57,15 +57,6 @@ def generate_responses(model, tokenizer, dataset, args, template_format="default
             if template_format == "mmlu":
                 question_template = '''{question}\nA) {answerA}.\nB) {answerB}.\nC) {answerC}.\nD) {answerD}.\n'''
                 user_message = 'The answer is'
-                # if 'Llama-3' in args.model_name:
-                #     q_dict_batch_formatted = [
-                #         args.template_system_and_user.format(
-                #             system_prompt=question_template.format(question=q_dict_batch['input'][i], answerA=q_dict_batch['A'][i], answerB=q_dict_batch['B'][i], answerC=q_dict_batch['C'][i], answerD=q_dict_batch['D'][i]), 
-                #             user_message=user_message
-                #         )
-                #         for i in range(batch_size)
-                #     ]
-                # else:
                 q_dict_batch_formatted = [
                     question_template.format(question=q_dict_batch['input'][i], answerA=q_dict_batch['A'][i], answerB=q_dict_batch['B'][i], answerC=q_dict_batch['C'][i], answerD=q_dict_batch['D'][i]) + user_message 
                     for i in range(batch_size)
@@ -109,15 +100,6 @@ def feed_forward_responses(model, tokenizer, dataset, args, template_format="def
             if template_format == "mmlu":
                 question_template = '''{question}\nA) {answerA}.\nB) {answerB}.\nC) {answerC}.\nD) {answerD}.\n'''
                 user_message = 'The answer is'
-                # if 'Llama-3' in args.model_name:
-                #     q_dict_batch_formatted = [
-                #         args.template_system_and_user.format(
-                #             system_prompt=question_template.format(question=q_dict_batch['input'][i], answerA=q_dict_batch['A'][i], answerB=q_dict_batch['B'][i], answerC=q_dict_batch['C'][i], answerD=q_dict_batch['D'][i]), 
-                #             user_message=user_message
-                #         )
-                #         for i in range(batch_size)
-                #     ]
-                # else:
                 q_dict_batch_formatted = [
                     question_template.format(question=q_dict_batch['input'][i], answerA=q_dict_batch['A'][i], answerB=q_dict_batch['B'][i], answerC=q_dict_batch['C'][i], answerD=q_dict_batch['D'][i]) + user_message 
                     for i in range(batch_size)

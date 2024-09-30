@@ -49,7 +49,7 @@ class GenerationArgsHelpfulness:
         parser.add_argument('--num_instructions', default=16, type=int, help='number of instructions to generate for each prompt')
         parser.add_argument('--num_samples', default=1, type=int, help='number of samples to generate for each instruction')
         parser.add_argument('--is_synth_reading_vectors', action='store_true', help='Whether to generate reading vectors synthetically (produced by the model) or load them from the dataset for REPE') 
-        parser.add_argument('--output_dir', default="data/harmfulness_experiments_outputs/default_dir_helpfulness", type=str, help='Path for the output directory')
+        parser.add_argument('--output_dir', default=None, type=str, help='Path for the output directory')
         
         args = parser.parse_args()
         self.model_name = args.model_name
@@ -95,7 +95,7 @@ class GenerationArgsSafety:
         parser.add_argument('--num_instructions', default=16, type=int, help='number of instructions to generate for each prompt')
         parser.add_argument('--num_samples', default=1, type=int, help='number of samples to generate for each instruction')
         parser.add_argument('--is_synth_reading_vectors', action='store_true', help='Whether to generate reading vectors synthetically (produced by the model) or load them from the dataset for REPE') 
-        parser.add_argument('--output_dir', default="data/harmfulness_experiments_outputs/default_dir_safety", type=str, help='Path for the output directory')
+        parser.add_argument('--output_dir', default=None, type=str, help='Path for the output directory')
         
         args = parser.parse_args()
         self.model_name = args.model_name
@@ -142,7 +142,7 @@ class GenerationArgsQuality:
         parser.add_argument('--num_instructions', default=48, type=int, help='number of instructions to generate for each prompt')
         parser.add_argument('--num_samples', default=1, type=int, help='number of samples to generate for each instruction')
         parser.add_argument('--is_synth_reading_vectors', action='store_true', help='Whether to generate reading vectors synthetically (produced by the model) or load them from the dataset for REPE') 
-        parser.add_argument('--output_dir', default="data/quality_experiments_outputs/default_dir_quality", type=str, help='Path for the output directory')
+        parser.add_argument('--output_dir', default=None, type=str, help='Path for the output directory')
         
         args = parser.parse_args()
         self.model_name = args.model_name

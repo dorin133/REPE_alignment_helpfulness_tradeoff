@@ -45,25 +45,6 @@ class ReadingVectors_Harmfulness:
         test_data_by_template = [template.format(instruction=s) for s in test_data]
         
         return train_data_Q_and_A, train_labels, test_data_by_template
-    
-    # def reading_vec_dataset_by_github(self):
-    #     system_prompt =  "You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.\n\nIf a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information."
-    #     template_raw = "Can you {instruction}?"
-    #     dataset = load_dataset(self.reading_vec_dataset, use_auth_token=True, cache_dir=None)
-
-    #     train_dataset, test_dataset = dataset['train'], dataset['test'] if 'test' in dataset else dataset['train']
-
-    #     train_data, train_labels = train_dataset['sentence'], train_dataset['label']
-    #     test_data = test_dataset['sentence']
-
-    #     train_data = np.concatenate(train_data).tolist()
-    #     test_data = np.concatenate(test_data).tolist()
-        
-    #     train_data = [self.args.template_system_and_user.format(system_prompt=system_prompt, user_message=s) for s in train_data]
-    #     test_data_by_template = [self.args.template_system_and_user.format(system_prompt=system_prompt, user_message=s) for s in test_data]
-        
-    #     return train_data, train_labels, test_data_by_template
-
 
 
 class Synthetic_ReadingVectors_Harmfulness:
@@ -170,35 +151,6 @@ class ReadingVectors_Fairness:
         train_data, train_labels, test_data = self._reading_vec_dataset_chat_model()
         data = {"train_data": train_data, "train_labels": train_labels, "test_data": test_data}
         return train_data, train_labels, test_data
-        
-    # def _reading_vec_dataset_chat_model(self, ntrain=150, bias='race'):
-    #     def get_scenarios(example):
-    #         data = example['sentences']
-    #         # gold_label is an array with 0,1,2 in which 0 correspond to anti_stereotype and 1 correspond to stereotype
-    #         anti_stereotype_idx = data['gold_label'].index(0)
-    #         stereotype_idx = data['gold_label'].index(1)
-    #         scenario = ""
-    #         if 'BLANK' not in example['context']:
-    #             scenario += example['context'] + " "
-    #         return (
-    #             scenario + data['sentence'][anti_stereotype_idx],
-    #             scenario + data['sentence'][stereotype_idx],
-    #         )
-    #     # data = load_dataset(self.reading_vec_dataset_path, self.reading_vec_dataset_name, use_auth_token=True)['validation'].shuffle(seed=42)
-    #     data = load_from_disk(self.reading_vec_dataset_path).shuffle(seed=1)
-    #     train_data = data.filter(lambda x: x['bias_type'] == bias).select(range(ntrain))
-    #     test_data = data.filter(lambda x: x['bias_type'] == bias).select(range(ntrain,min(2*ntrain, len(data))))
-    #     alignment = False if ("chat" in self.args.model_name or "instruct" in self.args.model_name) else True
-    #     order = [False, True] if alignment else [True, False]
-
-    #     train_statements = [stereotype for s in train_data for stereotype in get_scenarios(s)]
-    #     train_statements_labels = [order.copy() for _ in range(len(train_statements)//2)]
-    #     test_statements = [stereotype for s in test_data for stereotype in get_scenarios(s)]
-        
-    #     train_data_Q_and_A = [self.args.template_system_and_user.format(system_prompt=f"Consider the statement: {s}", user_message="Answer: ") for s in train_statements]
-    #     # test_data_by_template = [self.args.template_system_and_user.format(system_prompt=f"Request: {s}", user_message="Answer: ") for s in test_data]
-
-    #     return train_data_Q_and_A, train_statements_labels, test_statements
 
     def _reading_vec_dataset_chat_model(self, ntrain=150, bias='race'):
         def get_scenarios(example):
@@ -251,8 +203,7 @@ class Synthetic_ReadingVectors_Fairness:
         self.reading_vec_dataset_path = 'stereoset'
         self.reading_vec_dataset_name = 'intrasentence'
         self.model_name_or_path_for_generation = model_name_or_path_for_generation # the model used to synthetically generate the reading vectors pairs
-        self.reading_vec_dataset_save_path = reading_vec_dataset_save_path if reading_vec_dataset_save_path is not None \
-                                            else f'./data/reading_vec_datasets_new/reading_vec_dataset_{args.model_name.replace("/","_")}_fairness.json'
+        self.reading_vec_dataset_save_path = reading_vec_dataset_save_path
         os.makedirs(os.path.dirname(self.reading_vec_dataset_save_path), exist_ok=True)
 
     def load_reading_vec_dataset(self):
