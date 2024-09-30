@@ -41,7 +41,7 @@ else:
     # chat model
     save_data_dir = 'separation_by_dr_chat_model'
     
-file_path = f'../../lab_data/{save_data_dir}/lamma2_vocab.json'
+file_path = f'../../data/{save_data_dir}/lamma2_vocab.json'
 with open(file_path, 'r') as file:
   vocabulary = json.load(file)
 
@@ -61,7 +61,7 @@ gt_norms = []
 
 for idx in range(10):
   top_k_indices = []
-  file_path = f'../../lab_data/{save_data_dir}/logits_iter_gt_inst_{idx}.json'
+  file_path = f'../../data/{save_data_dir}/logits_iter_gt_inst_{idx}.json'
   with open(file_path, 'r') as file:
     gt_curr_logits = torch.tensor(json.load(file))
     gt_norms.append(torch.norm(gt_curr_logits).item())
@@ -85,7 +85,7 @@ for idx in range(10):
   all_top_k_indices = []
   # ----- find the indices in the llama2 vocabulary of the most probable tokens of harmful behavior responses ----- #
   for i in range(66, 70):
-    file_path = f"../../lab_data/{save_data_dir}/logits_iter_{i}_inst_{idx}.json"
+    file_path = f"../../data/{save_data_dir}/logits_iter_{i}_inst_{idx}.json"
     with open(file_path, 'r') as file:
       tensor_logits = torch.tensor(json.load(file))
       all_top_k_indices.extend(indices_of_k_most_probable_tokens(tensor_logits, amount_of_tokens))
@@ -101,7 +101,7 @@ for idx in range(10):
 gt_logits_harmful_tokens = {}
 gt_logits_top_gt_tokens = {}
 for idx in range(10):
-  file_path = f"../../lab_data/{save_data_dir}/logits_iter_gt_inst_{idx}.json"
+  file_path = f"../../data/{save_data_dir}/logits_iter_gt_inst_{idx}.json"
   with open(file_path, 'r') as file:
     gt_curr_logits = torch.tensor(json.load(file))
   gt_logits_harmful_tokens[idx] = [gt_curr_logits[curr_idx] for curr_idx in most_probable_harmful_tokens_indices[idx]]
@@ -120,7 +120,7 @@ y_plot = x
 for plot_key in all_x_plots.keys():
   for idx in range(10):
     for i, coeff in enumerate(x):
-      file_path = f"../../lab_data/{save_data_dir}/logits_iter_{i}_inst_{idx}.json"
+      file_path = f"../../data/{save_data_dir}/logits_iter_{i}_inst_{idx}.json"
       with open(file_path, 'r') as file:
         logits = json.load(file)
         curr_logits = torch.tensor(logits)
@@ -183,7 +183,7 @@ for idx in range(num_plots):
 
 fig.savefig(f'plots_separation_lower_bound_{model_name}.png')
 plt.show()
-file_slopes_path = f"../../lab_data/{save_data_dir}/estimated_slopes_{save_data_dir}.json"
+file_slopes_path = f"../../data/{save_data_dir}/estimated_slopes_{save_data_dir}.json"
 with open(file_slopes_path, 'w') as file:
   json.dump(slopes, file)
 
