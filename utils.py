@@ -39,7 +39,7 @@ def identify_letter_from_tokenized_answer(answer, tokenizer):
     # answer_letters = [answer.find(possible_answer_letters[i]) for i in range(len(possible_answer_letters)) if answer.find(possible_answer_letters[i]) != -1]
     answer_letters_idx = [token_idx for token_idx in range(len(tokenized_answer)-1) if (tokenized_answer[token_idx] in possible_answer_letters) 
                         if not re.search(r'[A-Za-z]', tokenized_answer[token_idx+1]) and '▁' not in tokenized_answer[token_idx+1] and 'Ġ' not in tokenized_answer[token_idx+1]]
-    if answer_letters_idx == []:
+    if not answer_letters_idx:
         return 'NONE', -1
     answer_letter = tokenized_answer[min(answer_letters_idx)]
     if '▁' in answer_letter or 'Ġ' in answer_letter:

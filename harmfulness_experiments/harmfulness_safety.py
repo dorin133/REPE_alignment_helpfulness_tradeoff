@@ -10,14 +10,13 @@ import numpy as np
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.getcwd())))
 from repe.rep_control_reading_vec import WrappedReadingVecModel
-from experiments.GenArgs import GenerationArgsSafety
-from experiments.WrapModel import WrapModel
-from experiments.generate_reading_vectors import Synthetic_ReadingVectors_Harmfulness, ReadingVectors_Harmfulness
-# from harmfulness_experiments.harmfulness_utils import reading_vec_dataset_raw_model
+from GenArgs import GenerationArgsSafety
+from WrapModel import WrapModel
+from generate_reading_vectors import Synthetic_ReadingVectors_Harmfulness, ReadingVectors_Harmfulness
 from repe import repe_pipeline_registry
 repe_pipeline_registry()
-from experiments.utils import generate_responses, feed_forward_responses, feed_dialog_behavior
-from experiments.utils import load_test_dataset
+from utils import generate_responses, feed_forward_responses, feed_dialog_behavior
+from utils import load_test_dataset
 from datasets import Dataset
 
 args = GenerationArgsSafety()

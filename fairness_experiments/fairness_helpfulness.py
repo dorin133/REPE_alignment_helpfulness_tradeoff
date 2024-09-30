@@ -10,12 +10,11 @@ import numpy as np
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.getcwd())))
 from repe.rep_control_reading_vec import WrappedReadingVecModel
-from experiments.GenArgs import GenerationArgsHelpfulness
-from experiments.WrapModel import WrapModel
-from experiments.generate_reading_vectors import ReadingVectors_Fairness, Synthetic_ReadingVectors_Fairness
-# from harmfulness_experiments.harmfulness_utils import reading_vec_dataset_raw_model
-from experiments.utils import generate_responses, feed_mmlu_helpfulness, feed_forward_responses
-from experiments.utils import load_test_dataset, get_logits_dict_and_probs, get_norms_and_projections
+from GenArgs import GenerationArgsHelpfulness
+from WrapModel import WrapModel
+from generate_reading_vectors import ReadingVectors_Fairness, Synthetic_ReadingVectors_Fairness
+from utils import generate_responses, feed_mmlu_helpfulness, feed_forward_responses
+from utils import load_test_dataset, get_logits_dict_and_probs, get_norms_and_projections
 from repe import repe_pipeline_registry
 repe_pipeline_registry()
 from datasets import load_dataset
