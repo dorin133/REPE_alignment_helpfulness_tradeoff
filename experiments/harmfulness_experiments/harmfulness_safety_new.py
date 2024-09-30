@@ -48,7 +48,7 @@ os.environ['HF_HOME'] = '/home/dshteyma/.cache/huggingface'
 ################################# load the harmful dataset behavior
 if args.is_synth_reading_vectors:
     # synthetic reading vectors for alignment experiments
-    model_name_or_path_for_generation = 'meta-llama/Meta-Llama-3.1-8B-Instruct' if "Llama-3" in args.model_name else 'meta-llama/Llama-2-13b-hf'
+    model_name_or_path_for_generation = 'meta-llama/Meta-Llama-3.1-8B-Instruct' if "Llama-3" in args.model_name else 'meta-llama/Llama-2-13b-chat-hf'
     reading_vec_dataset_save_path = f'./data/reading_vec_datasets/reading_vec_dataset_{args.model_name.replace("/","_").replace("-Instruct", "")}.json'
     reading_vecs = Synthetic_ReadingVectors_Harmfulness(args, reading_vec_dataset_save_path, model_name_or_path_for_generation)
 else:
@@ -56,7 +56,7 @@ else:
     reading_vecs = ReadingVectors_Harmfulness(args)    
     
 train_data, train_labels, test_data = reading_vecs.load_reading_vec_dataset()
-if args.is_synth_reading_vectors and 'chat' in args.model_name or 'Instruct' in args.model_name:
+if args.is_synth_reading_vectors and ('chat' in args.model_name or 'Instruct' in args.model_name):
     for i, elem in enumerate(train_data):
         if train_labels[i//2][i%2]==True:
             pattern_to_add = 'Sure! Here\'s a solution for the task'

@@ -15,13 +15,14 @@ from experiments.WrapModel import WrapModel
 from experiments.generate_reading_vectors import Synthetic_ReadingVectors_Harmfulness, ReadingVectors_Harmfulness
 # from harmfulness_experiments.harmfulness_utils import reading_vec_dataset_raw_model
 from experiments.utils import generate_responses, feed_mmlu_helpfulness, feed_forward_responses
-from experiments.utils import load_test_dataset
+from experiments.utils import load_test_dataset, get_logits_dict_and_probs, get_norms_and_projections
 from repe import repe_pipeline_registry
 repe_pipeline_registry()
 from datasets import load_dataset
 import torch.nn.functional as F
 import math
 import argparse
+import pickle
 
 args = GenerationArgsHelpfulness()
 print(args)
@@ -50,13 +51,13 @@ vocabulary = tokenizer.get_vocab()
 os.environ['HF_HOME'] = '/home/dshteyma/.cache/huggingface'
 ################################# load the harmful dataset behavior
 if args.is_synth_reading_vectors:
+    # synthetic reading vectors for helpfulness experiments
+    model_name_or_path_for_generation = 'meta-llama/Meta-Llama-3.1-8B-Instruct' if "Llama-3" in args.model_name else 'meta-llama/Llama-2-13b-chat-hf'
+    reading_vec_dataset_save_path = f'./data/reading_vec_datasets_new/reading_vec_dataset_{args.model_name.replace("/","_")}.json'
+    reading_vecs = Synthetic_ReadingVectors_Harmfulness(args, reading_vec_dataset_save_path, model_name_or_path_for_generation)
+else:
     # chat model
     reading_vecs = ReadingVectors_Harmfulness(args)
-else:
-    # synthetic reading vectors for helpfulness experiments
-    model_name_or_path_for_generation = 'meta-llama/Meta-Llama-3.1-8B-Instruct' if "Llama-3" in args.model_name else 'meta-llama/Llama-2-13b-hf'
-    reading_vec_dataset_save_path = f'./data/reading_vec_datasets/reading_vec_dataset_{args.model_name.replace("/","_")}.json'
-    reading_vecs = Synthetic_ReadingVectors_Harmfulness(args, reading_vec_dataset_save_path, model_name_or_path_for_generation)
 
 train_data, train_labels, _ = reading_vecs.load_reading_vec_dataset()
 
@@ -67,9 +68,9 @@ dataset_names = args.dataset_names.split(',')
 
 for dataset_name in dataset_names: # , 'high_school_computer_science', 'medical_genetics', 'international_law', 'clinical_knowledge'
     dataset = load_test_dataset(dataset_path=args.dataset_path, dataset_name=dataset_name)
-
+    start_coeff = args.start_coeff
     #test model on dataset for various norms of injected vectors
-    x = list(np.round(np.arange(args.start_coeff, args.end_coeff, args.coeff_step), 1))
+    x = list(np.round(np.arange(start_coeff, args.end_coeff, args.coeff_step), 2))
     acc_mean = {key: 0 for key in x}
     acc_std = {key: 0 for key in x}
     p_mean = {key: 0 for key in x}
@@ -77,6 +78,14 @@ for dataset_name in dataset_names: # , 'high_school_computer_science', 'medical_
     p_std = {key: 0 for key in x}
     p_std_relative = {key: 0 for key in x}
     all_answers_dict = {coeff: {} for coeff in x}
+
+    vector_norms = {coeff: {} for coeff in x}
+    norms_stds = {coeff: {} for coeff in x}
+    projections = {coeff: {} for coeff in x}
+
+    wrapped_model = wrap_model.wrap_model(0.0)
+    all_logits_forward_pass = feed_forward_responses(model, tokenizer, dataset, args, template_format='mmlu', batch_size=16)
+    no_repe_logit_dict, no_repe_best_inds = get_logits_dict_and_probs(args, dataset, all_logits_forward_pass)
 
     for coeff in x:
         wrapped_model = wrap_model.wrap_model(coeff)
@@ -89,10 +98,11 @@ for dataset_name in dataset_names: # , 'high_school_computer_science', 'medical_
                                                     args, 
                                                     template_format='mmlu',
                                                     batch_size=16,
-                                                    do_sample=True
-                                                ) 
+                                                    do_sample=args.do_sample
+                                                )
         # Only one forward pass to get the first logits
         all_logits_forward_pass = feed_forward_responses(model, tokenizer, dataset, args, template_format='mmlu', batch_size=16)
+        vector_norms[coeff], norms_stds[coeff], projections[coeff] = get_norms_and_projections(args, dataset, tokenizer, all_logits_forward_pass, no_repe_logit_dict, no_repe_best_inds)
         probs_samples, p_relative_label_answer_samples, acc_answer_samples = feed_mmlu_helpfulness(
                                                                                                 tokenizer, 
                                                                                                 dataset, 
@@ -103,13 +113,13 @@ for dataset_name in dataset_names: # , 'high_school_computer_science', 'medical_
                                                                                                 batch_size=16
                                                                                             )
 
-        p_mean[coeff] = np.nanmean(np.nanmean(probs_samples, axis=0))
-        p_mean_relative[coeff] = np.nanmean(np.nanmean(p_relative_label_answer_samples, axis=0))
-        acc_mean[coeff] = np.nanmean(np.nanmean(acc_answer_samples, axis=0))
+        p_mean[coeff] = np.mean(np.mean(np.nan_to_num(probs_samples, nan=0.0), axis=0))
+        p_mean_relative[coeff] = np.mean(np.mean(np.nan_to_num(p_relative_label_answer_samples, nan=0.0), axis=0))
+        acc_mean[coeff] = np.mean(np.mean(np.nan_to_num(acc_answer_samples, nan=0.0), axis=0))
 
-        p_std[coeff] = np.nanstd(np.nanmean(probs_samples, axis=0))
-        p_std_relative[coeff] = np.nanstd(np.nanmean(p_relative_label_answer_samples, axis=0))
-        acc_std[coeff] = np.nanmean(np.nanstd(acc_answer_samples, axis=0))
+        p_std[coeff] = np.std(np.mean(np.nan_to_num(probs_samples, nan=0.0), axis=0))
+        p_std_relative[coeff] = np.std(np.mean(np.nan_to_num(p_relative_label_answer_samples, nan=0.0), axis=0))
+        acc_std[coeff] = np.std(np.mean(np.nan_to_num(acc_answer_samples, nan=0.0), axis=0))
 
         print(f'p_mean for coeff {coeff}: {p_mean[coeff]}')
         print(f'p_std for coeff {coeff}: {p_std[coeff]}')
@@ -126,8 +136,10 @@ for dataset_name in dataset_names: # , 'high_school_computer_science', 'medical_
         all_answers_dict[coeff] = all_answers
         with open(f'{args.output_dir}/{dataset_name}/helpfulness_harmfulness_{args.model_name.replace("/","_")}_answers_sample.json', 'w') as file:
             json.dump(all_answers_dict, file)
+
+                # projection_on_delta()
+        with open(f'{args.output_dir}/{dataset_name}/helpfulness_harmfulness_{args.model_name.replace("/","_")}_proj.pkl', 'wb') as f:
+            pickle.dump(projections, f)
+        with open(f'{args.output_dir}/{dataset_name}/helpfulness_harmfulness_{args.model_name.replace("/","_")}_vec_norms.pkl', 'wb') as f:
+            pickle.dump(vector_norms, f)
             
-
-
-
-

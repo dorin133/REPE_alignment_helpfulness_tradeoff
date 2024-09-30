@@ -9,9 +9,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
 import json
-from datasets import load_dataset
+from datasets import load_dataset, load_from_disk
 import argparse
 from typing import List, Dict, Any
+
 
 
 class ReadingVectors_Harmfulness:
@@ -37,12 +38,32 @@ class ReadingVectors_Harmfulness:
 
         train_data = np.concatenate(train_data).tolist()
         test_data = np.concatenate(test_data).tolist()
-
-        # train_data = [template.format(user_message=s) for s in train_data]
-        train_data_Q_and_A = [self.args.template_system_and_user.format(system_prompt=f"Request: {s}", user_message="Answer: ") for s in train_data]
-        test_data_by_template = [self.args.template_system_and_user.format(system_prompt=f"Request: {s}", user_message="Answer: ") for s in test_data]
+        
+        template = "Request: Can you {instruction}? Answer:"
+        train_data_Q_and_A = [template.format(instruction=s) for s in train_data]
+        # train_data_Q_and_A = [self.args.template_system_and_user.format(system_prompt=f"Request: {s}", user_message="Answer: ") for s in train_data]
+        test_data_by_template = [template.format(instruction=s) for s in test_data]
         
         return train_data_Q_and_A, train_labels, test_data_by_template
+    
+    # def reading_vec_dataset_by_github(self):
+    #     system_prompt =  "You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.\n\nIf a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information."
+    #     template_raw = "Can you {instruction}?"
+    #     dataset = load_dataset(self.reading_vec_dataset, use_auth_token=True, cache_dir=None)
+
+    #     train_dataset, test_dataset = dataset['train'], dataset['test'] if 'test' in dataset else dataset['train']
+
+    #     train_data, train_labels = train_dataset['sentence'], train_dataset['label']
+    #     test_data = test_dataset['sentence']
+
+    #     train_data = np.concatenate(train_data).tolist()
+    #     test_data = np.concatenate(test_data).tolist()
+        
+    #     train_data = [self.args.template_system_and_user.format(system_prompt=system_prompt, user_message=s) for s in train_data]
+    #     test_data_by_template = [self.args.template_system_and_user.format(system_prompt=system_prompt, user_message=s) for s in test_data]
+        
+    #     return train_data, train_labels, test_data_by_template
+
 
 
 class Synthetic_ReadingVectors_Harmfulness:
@@ -51,7 +72,7 @@ class Synthetic_ReadingVectors_Harmfulness:
         self.args = args
         self.model_name_or_path_for_generation = model_name_or_path_for_generation # the model used to synthetically generate the reading vectors pairs
         self.reading_vec_dataset = "justinphan3110/harmful_harmless_instructions"
-        self.reading_vec_dataset_save_path = reading_vec_dataset_save_path if reading_vec_dataset_save_path is not None else f'./data/reading_vec_datasets/reading_vec_dataset_{args.model_name.replace("/","_")}.json'
+        self.reading_vec_dataset_save_path = reading_vec_dataset_save_path if reading_vec_dataset_save_path is not None else f'./data/reading_vec_datasets_new/reading_vec_dataset_{args.model_name.replace("/","_")}.json'
         os.makedirs(os.path.dirname(self.reading_vec_dataset_save_path), exist_ok=True)
 
     def load_reading_vec_dataset(self):
@@ -63,25 +84,27 @@ class Synthetic_ReadingVectors_Harmfulness:
                 json.dump(data, file)
         with open(self.reading_vec_dataset_save_path, 'r') as file:
             data = json.load(file)
-            train_data, train_labels, test_data = data["train_data"], data["train_labels"], data["test_data"]
+        train_data, train_labels, test_data = data["train_data"], data["train_labels"], data["test_data"]
         return train_data, train_labels, test_data   
 
     def _reading_vec_dataset_raw_model(self):
-        dataset = load_dataset(self.reading_vec_dataset, cache_dir=None)
+        template_raw = "{instruction}"
+        template = "QUESTION: {instruction}\n\nANSWER: "
+        dataset = load_dataset("justinphan3110/harmful_harmless_instructions")
 
         train_dataset, test_dataset = dataset['train'], dataset['test'] if 'test' in dataset else dataset['train']
 
         train_data, train_labels = train_dataset['sentence'], train_dataset['label']
         test_data = test_dataset['sentence']
 
-        train_data_flat = np.concatenate(train_data).tolist()
+        train_data = np.concatenate(train_data).tolist()
         train_labels_flat = np.concatenate(train_labels).tolist()
-        train_data_harmful = np.array([[train_data_flat[j], train_data_flat[j]] for j in range(len(train_data_flat)) if train_labels_flat[j] == False])
+        train_data_harmful = np.array([[train_data[j], train_data[j]] for j in range(len(train_data)) if train_labels_flat[j] == False])
         train_data_harmful = np.concatenate(train_data_harmful).tolist()
         test_data = np.concatenate(test_data).tolist()
 
-        train_data_Q_and_A = [self.args.template_system_and_user.format(system_prompt=f"Request: {s}", user_message="Answer: ") for s in train_data_harmful]
-        test_data_by_template = [self.args.template_system_and_user.format(system_prompt=f"Request: {s}", user_message="Answer: ") for s in test_data]
+        train_data_Q_and_A = [template.format(instruction=s) for s in train_data_harmful]
+        test_data_by_template = [template.format(instruction=s) for s in test_data]
 
         model_chat = AutoModelForCausalLM.from_pretrained(self.model_name_or_path_for_generation, torch_dtype=torch.float16, device_map="auto", token=True).eval()
         use_fast_tokenizer = "LlamaForCausalLM" not in model_chat.config.architectures
@@ -116,7 +139,7 @@ class Synthetic_ReadingVectors_Harmfulness:
         wrapped_model.wrap_block(layer_id, block_name=block_name)
 
         for j, instruction in enumerate(train_data_harmful):
-            coeff = -1.0 if train_labels_flat[j] == True else 2.5
+            coeff = -1.0 if train_labels_flat[j] == True else 2.0
             if 'Llama-3' in self.model_name_or_path_for_generation:
                 coeff = -0.5 if train_labels_flat[j] == True else 0.9
             activations = {}
@@ -148,6 +171,35 @@ class ReadingVectors_Fairness:
         data = {"train_data": train_data, "train_labels": train_labels, "test_data": test_data}
         return train_data, train_labels, test_data
         
+    # def _reading_vec_dataset_chat_model(self, ntrain=150, bias='race'):
+    #     def get_scenarios(example):
+    #         data = example['sentences']
+    #         # gold_label is an array with 0,1,2 in which 0 correspond to anti_stereotype and 1 correspond to stereotype
+    #         anti_stereotype_idx = data['gold_label'].index(0)
+    #         stereotype_idx = data['gold_label'].index(1)
+    #         scenario = ""
+    #         if 'BLANK' not in example['context']:
+    #             scenario += example['context'] + " "
+    #         return (
+    #             scenario + data['sentence'][anti_stereotype_idx],
+    #             scenario + data['sentence'][stereotype_idx],
+    #         )
+    #     # data = load_dataset(self.reading_vec_dataset_path, self.reading_vec_dataset_name, use_auth_token=True)['validation'].shuffle(seed=42)
+    #     data = load_from_disk(self.reading_vec_dataset_path).shuffle(seed=1)
+    #     train_data = data.filter(lambda x: x['bias_type'] == bias).select(range(ntrain))
+    #     test_data = data.filter(lambda x: x['bias_type'] == bias).select(range(ntrain,min(2*ntrain, len(data))))
+    #     alignment = False if ("chat" in self.args.model_name or "instruct" in self.args.model_name) else True
+    #     order = [False, True] if alignment else [True, False]
+
+    #     train_statements = [stereotype for s in train_data for stereotype in get_scenarios(s)]
+    #     train_statements_labels = [order.copy() for _ in range(len(train_statements)//2)]
+    #     test_statements = [stereotype for s in test_data for stereotype in get_scenarios(s)]
+        
+    #     train_data_Q_and_A = [self.args.template_system_and_user.format(system_prompt=f"Consider the statement: {s}", user_message="Answer: ") for s in train_statements]
+    #     # test_data_by_template = [self.args.template_system_and_user.format(system_prompt=f"Request: {s}", user_message="Answer: ") for s in test_data]
+
+    #     return train_data_Q_and_A, train_statements_labels, test_statements
+
     def _reading_vec_dataset_chat_model(self, ntrain=150, bias='race'):
         def get_scenarios(example):
             data = example['sentences']
@@ -161,19 +213,36 @@ class ReadingVectors_Fairness:
                 scenario + data['sentence'][anti_stereotype_idx],
                 scenario + data['sentence'][stereotype_idx],
             )
-        data = load_dataset(self.reading_vec_dataset_path, self.reading_vec_dataset_name)['validation'].shuffle(seed=42)
-        train_data = data.filter(lambda x: x['bias_type'] == bias).select(range(ntrain))
-        test_data = data.filter(lambda x: x['bias_type'] == bias).select(range(ntrain,min(2*ntrain, len(data))))
-        order = [True, False]
+        dataset = load_from_disk(self.reading_vec_dataset_path).shuffle(seed=1)
+        dataset = dataset.filter(lambda x: x['bias_type'] == bias)
+        m = min([ntrain, len(dataset)])
+        new_train_labels = []
+        new_train_statements = []
+        alignment = False if ("chat" in self.args.model_name or "instruct" in self.args.model_name) else True
+        order = [False, True] if alignment else [True, False]
+        for d in dataset.select(range(m)):
+            anti_steotype, stereotype = get_scenarios(d)
+            non_biased_statement = f"Question: Consider the statement: {stereotype} Answer: The statement is false and racist."
+            biased_statement = f"Question: Consider the statement: {stereotype} Answer: 100%"
+            new_train_statements.append(biased_statement)
+            new_train_statements.append(non_biased_statement)
+            new_train_labels.append(order.copy())
 
-        train_statements = [stereotype for s in train_data for stereotype in get_scenarios(s)]
-        train_statements_labels = [order.copy() for _ in range(len(train_statements)//2)]
-        test_statements = [stereotype for s in test_data for stereotype in get_scenarios(s)]
-        
-        train_data_Q_and_A = [self.args.template_system_and_user.format(system_prompt=f"Request: {s}", user_message="Answer: ") for s in train_statements]
-        # test_data_by_template = [self.args.template_system_and_user.format(system_prompt=f"Request: {s}", user_message="Answer: ") for s in test_data]
+        dataset = load_from_disk(self.reading_vec_dataset_path).shuffle(seed=1)
+        dataset = dataset.filter(lambda x: x['bias_type'] == "race")
+        # template_test = "Yes or No: Do you agree with the following statement?\nStatement: {statement}\nANSWER: "
+        template_test = "QUESTION: Do you agree with the following statement: {statement} ANSWER: "
+        test_dataset = dataset.select(range(ntrain,len(dataset)))
+        test_data = []
+        for d in test_dataset:
+            anti_steotype, stereotype = get_scenarios(d)
+            current_group = [anti_steotype, stereotype]
+            test_data.extend(current_group)
 
-        return train_data_Q_and_A, train_statements_labels, test_statements
+        test_data = [template_test.format(statement=s) for s in test_data]
+        test_labels = [1, 0] * (len(test_data) // 2)
+
+        return new_train_statements, new_train_labels, test_data
     
 class Synthetic_ReadingVectors_Fairness:
     
@@ -183,7 +252,7 @@ class Synthetic_ReadingVectors_Fairness:
         self.reading_vec_dataset_name = 'intrasentence'
         self.model_name_or_path_for_generation = model_name_or_path_for_generation # the model used to synthetically generate the reading vectors pairs
         self.reading_vec_dataset_save_path = reading_vec_dataset_save_path if reading_vec_dataset_save_path is not None \
-                                            else f'./data/reading_vec_datasets/reading_vec_dataset_{args.model_name.replace("/","_")}_fairness.json'
+                                            else f'./data/reading_vec_datasets_new/reading_vec_dataset_{args.model_name.replace("/","_")}_fairness.json'
         os.makedirs(os.path.dirname(self.reading_vec_dataset_save_path), exist_ok=True)
 
     def load_reading_vec_dataset(self):
@@ -198,7 +267,9 @@ class Synthetic_ReadingVectors_Fairness:
             train_data, train_labels, test_data = data["train_data"], data["train_labels"], data["test_data"]
         return train_data, train_labels, test_data   
     
-    def load_dataset_statements(self, ntrain=150, bias='race'):
+
+    def _reading_vec_dataset_raw_model(self):
+
         def get_scenarios(example):
             data = example['sentences']
             # gold_label is an array with 0,1,2 in which 0 correspond to anti_stereotype and 1 correspond to stereotype
@@ -211,27 +282,35 @@ class Synthetic_ReadingVectors_Fairness:
                 scenario + data['sentence'][anti_stereotype_idx],
                 scenario + data['sentence'][stereotype_idx],
             )
-        data = load_dataset(self.reading_vec_dataset_path, self.reading_vec_dataset_name)['validation'].shuffle(seed=42)
-        train_data = data.filter(lambda x: x['bias_type'] == bias).select(range(ntrain))
-        test_data = data.filter(lambda x: x['bias_type'] == bias).select(range(ntrain,min(2*ntrain, len(data))))
-        order = [True, False]
-        train_statements = [[self.args.template_system_and_user.format(system_prompt=f"Consider the statement: {stereotype}", 
-                                                                        user_message="Answer: "),
-                                self.args.template_system_and_user.format(system_prompt=f"Consider the statement: {stereotype}", 
-                                                                        user_message="Answer: ")]
-                                                                for s in train_data for i, stereotype in enumerate(get_scenarios(s)) if i==1]
-        train_statements = np.concatenate(train_statements).tolist()
-        train_statements_labels = [order.copy() for _ in range(len(train_statements)//2)]
             
-        test_statements = [self.args.template_system_and_user.format(system_prompt=f"Consider the statement: {stereotype}", 
-                                                                user_message="Answer: ")
-                                                        for s in test_data for i, stereotype in enumerate(get_scenarios(s))]
+        ntrain=150
+        dataset = load_from_disk(self.reading_vec_dataset_path).shuffle(seed=1)
+        dataset = dataset.filter(lambda x: x['bias_type'] == 'race')
+        m = min([ntrain, len(dataset)])
+        train_labels_flat = []
+        train_data_Q_and_A = []
+        alignment = False if ("chat" in self.args.model_name or "instruct" in self.args.model_name) else True
+        order = [False, True] if alignment else [True, False]
+        for d in dataset.select(range(m)):
+            anti_steotype, stereotype = get_scenarios(d)
+            non_biased_statement = f"QUESTION: Consider the statement: {stereotype} ANSWER: "
+            biased_statement = f"QUESTION: Consider the statement: {stereotype} ANSWER: "
+            train_data_Q_and_A.append(biased_statement)
+            train_data_Q_and_A.append(non_biased_statement)
+            train_labels_flat.append(order.copy())
 
-        return train_statements, train_statements_labels, test_statements
+        dataset = load_from_disk(self.reading_vec_dataset_path).shuffle(seed=1)
+        dataset = dataset.filter(lambda x: x['bias_type'] == "fairness")
 
-    def _reading_vec_dataset_raw_model(self):
+        template_test = "QUESTION: Do you agree with the following statement: {statement} ANSWER: "
+        test_dataset = dataset.select(range(ntrain, len(dataset)))
+        test_data = []
+        for d in test_dataset:
+            anti_steotype, stereotype = get_scenarios(d)
+            current_group = [anti_steotype, stereotype]
+            test_data.extend(current_group)
 
-        train_data_Q_and_A, train_labels_flat, test_data_by_template = self.load_dataset_statements()
+        test_data_by_template = [template_test.format(statement=s) for s in test_data]
 
         model_chat = AutoModelForCausalLM.from_pretrained(self.model_name_or_path_for_generation, torch_dtype=torch.float16, device_map="auto", token=True).eval()
         use_fast_tokenizer = "LlamaForCausalLM" not in model_chat.config.architectures
@@ -268,7 +347,7 @@ class Synthetic_ReadingVectors_Fairness:
         for j, instruction in enumerate(train_data_Q_and_A):
             coeff = -1.0 if train_labels_flat[j] == True else 2.5
             if 'Llama-3' in self.model_name_or_path_for_generation:
-                coeff = -0.9 if train_labels_flat[j] == True else 0.8
+                coeff = -0.8 if train_labels_flat[j] == True else 1.2
             activations = {}
             prompt = torch.unsqueeze(torch.tensor(tokenizer_chat.encode(instruction)),dim=0)
             for layer in layer_id:
@@ -278,48 +357,9 @@ class Synthetic_ReadingVectors_Fairness:
             wrapped_model.reset()
             wrapped_model.set_controller(layer_id, activations, 'decoder_block')
             with torch.no_grad():
-                outputs = model_chat.generate(prompt.cuda(), max_new_tokens=64, do_sample=False).detach().cpu()
+                outputs = model_chat.generate(prompt.cuda(), max_new_tokens=32, do_sample=False).detach().cpu()
                 generation = tokenizer_chat.decode(outputs[0], skip_special_tokens=True).replace(instruction, "")
                 train_data_Q_and_A[j] = f'{train_data_Q_and_A[j]}{generation}'
 
         return train_data_Q_and_A, train_labels, test_data_by_template
     
-
-# class ReadingVectorsChatModel_Helpfulness_Fairness:
-    
-#     def __init__(self, args):
-#         self.args = args
-#         self.reading_vec_dataset_path = 'stereoset'
-#         self.reading_vec_dataset_name = 'intrasentence'
-        
-        
-#     def load_reading_vec_dataset(self):
-#         train_data, train_labels, test_data = self._reading_vec_dataset_chat_model()
-#         data = {"train_data": train_data, "train_labels": train_labels, "test_data": test_data}
-#         return train_data, train_labels, test_data       
-        
-    
-#     def _get_scenarios(example):
-#         data = example['sentences']
-#         # gold_label is an array with 0,1,2 in which 0 correspond to anti_stereotype and 1 correspond to stereotype
-#         anti_stereotype_idx = data['gold_label'].index(0)
-#         stereotype_idx = data['gold_label'].index(1)
-#         scenario = ""
-#         if 'BLANK' not in example['context']:
-#             scenario += example['context'] + " "
-#         return (
-#             scenario + data['sentence'][anti_stereotype_idx],
-#             scenario + data['sentence'][stereotype_idx],
-#         )
-    
-#     def _reading_vec_dataset_chat_model(self, args, ntrain=150, bias='race'):
-#         data = load_dataset(self.reading_vec_dataset_path, self.reading_vec_dataset_name)['validation'].shuffle(seed=42)
-#         train_data = data.filter(lambda x: x['bias_type'] == bias).select(range(ntrain))
-#         test_data = data.filter(lambda x: x['bias_type'] == bias).select(range(ntrain: min(2*ntrain, len(data))))
-#         order = [True, False]
-
-#         train_statements = [stereotype for s in train_data for stereotype in _get_scenarios(s)]
-#         train_statements_labels = [order.copy() for _ in range(len(train_statements)//2)]
-#         test_statements = [stereotype for s in test_data for stereotype in _get_scenarios(s)]
-
-#         return train_statements, train_statements_labels, test_statements
