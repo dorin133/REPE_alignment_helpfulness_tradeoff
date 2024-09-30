@@ -31,7 +31,6 @@ print(args)
 model = AutoModelForCausalLM.from_pretrained(args.model_name, 
                                             torch_dtype=torch.float16,
                                             device_map="auto",
-                                            token='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',
                                             use_cache=True
                                         ).eval()
 use_fast_tokenizer = "LlamaForCausalLM" not in model.config.architectures
@@ -40,7 +39,6 @@ tokenizer = AutoTokenizer.from_pretrained(
                                         use_fast=use_fast_tokenizer,
                                         padding_side="left",
                                         legacy=False,
-                                        token='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',
                                     )
 tokenizer.pad_token_id = 0 if tokenizer.pad_token_id is None else tokenizer.pad_token_id
 tokenizer.bos_token_id = 1
@@ -48,7 +46,6 @@ print("load model finished!")
 
 ################################# load the llama2 model vocabulary
 vocabulary = tokenizer.get_vocab()
-os.environ['HF_HOME'] = '/home/dshteyma/.cache/huggingface'
 ################################# load the harmful dataset behavior
 if args.is_synth_reading_vectors:
     # synthetic reading vectors for helpfulness experiments
@@ -142,25 +139,3 @@ for dataset_name in dataset_names: # , 'high_school_computer_science', 'medical_
             pickle.dump(projections, f)
         with open(f'{args.output_dir}/{dataset_name}/helpfulness_fairness_{args.model_name.replace("/","_")}_vec_norms.pkl', 'wb') as f:
             pickle.dump(vector_norms, f)
-            
-
-# probs_samples, p_relative_samples, acc_answer_samples = fairness_utils.feed_dialog_helpfulness(
-#                                             model, tokenizer, 
-#                                             dataset, num_samples=args.num_samples,
-#                                             num_instructions=min(args.num_instructions, len(dataset))
-#                                         )
-
-# vector_norms[coeff], norms_stds[coeff], projections[coeff] = fairness_utils.get_norms_and_projections(
-#                                                                     wrapped_model, 
-#                                                                     tokenizer, dataset, 
-#                                                                     logits_dict, 
-#                                                                     best_inds_dict
-#                                                                 )
-
-# # projection_on_delta()
-# with open(f'{args.model_name}_{mmlu_dataset_name}_{args.bias}_proj.pkl', 'wb') as f:
-#     pickle.dump(projections, f)
-# with open(f'{args.model_name}_{mmlu_dataset_name}_{args.bias}_vec_norms.pkl', 'wb') as f:
-#     pickle.dump(vector_norms, f)
-
-
