@@ -1,102 +1,304 @@
+"""
+Fairness Safety Evaluation Script
+
+This script evaluates the safety behavior of language models using Representation Engineering (REPE)
+in the context of fairness. It measures how models respond to biased prompts with different coefficient
+interventions, analyzing the trade-off between fairness and safety.
+"""
+
 import csv
-import tqdm
 import torch
 import json
-from transformers import AutoTokenizer, pipeline, AutoModelForCausalLM
-from tqdm import tqdm
 import os
 import numpy as np
 import sys
-sys.path.append(os.path.abspath(os.path.join(os.getcwd())))
-from repe.rep_control_reading_vec import WrappedReadingVecModel
-from GenArgs import GenerationArgsSafety
-from WrapModel import WrapModel
-from generate_reading_vectors import Synthetic_ReadingVectors_Fairness, ReadingVectors_Fairness
-# from harmfulness_harmfulness_utils import reading_vec_dataset_raw_model
-from repe import repe_pipeline_registry
-repe_pipeline_registry()
-from utils import generate_responses, feed_forward_responses, feed_dialog_behavior
-from utils import load_test_dataset
+from typing import Dict, List, Any, Tuple
+from tqdm import tqdm
+from transformers import AutoTokenizer, AutoModelForCausalLM
 from datasets import Dataset
 
-args = GenerationArgsSafety()
-print(args)
+# Add project root to path for imports
+sys.path.append(os.path.abspath(os.path.join(os.getcwd())))
 
-################################# load model
-model = AutoModelForCausalLM.from_pretrained(args.model_name, 
-                                            torch_dtype=torch.float16,
-                                            device_map="auto",
-                                            use_cache=True
-                                        ).eval()
-use_fast_tokenizer = "LlamaForCausalLM" not in model.config.architectures
-tokenizer = AutoTokenizer.from_pretrained(
-                                        args.model_name,
-                                        use_fast=use_fast_tokenizer,
-                                        padding_side="left",
-                                        legacy=False,
-                                    )
-tokenizer.pad_token_id = 0 if tokenizer.pad_token_id is None else tokenizer.pad_token_id
-tokenizer.bos_token_id = 1
-print("load model finished!")
+from repe.rep_control_reading_vec import WrappedReadingVecModel
+from utils.GenArgs import GenerationArgsSafety
+from utils.WrapModel import WrapModel
+from utils.generate_reading_vectors import Synthetic_ReadingVectors_Fairness, ReadingVectors_Fairness
+from repe import repe_pipeline_registry
+from utils.utils import generate_responses, feed_forward_responses, feed_dialog_behavior
+from utils.utils import load_test_dataset
 
-################################# load the llama2 model vocabulary
-vocabulary = tokenizer.get_vocab()
-################################# load the harmful dataset behavior
-if args.is_synth_reading_vectors:
-    # synthetic reading vectors for helpfulness experiments
-    model_name_or_path_for_generation = 'meta-llama/Meta-Llama-3.1-8B-Instruct' if "Llama-3" in args.model_name else 'meta-llama/Llama-2-13b-chat-hf'
-    reading_vec_dataset_save_path = f'./data/reading_vec_datasets/reading_vec_dataset_{args.model_name.replace("/","_")}_fairness.json'
-    reading_vecs = Synthetic_ReadingVectors_Fairness(args, reading_vec_dataset_save_path, model_name_or_path_for_generation)
-else:
-    # RLHF aligned model
-    reading_vecs = ReadingVectors_Fairness(args)    
+# Register REPE pipeline components
+repe_pipeline_registry()
+
+
+def setup_model_and_tokenizer(model_name: str) -> Tuple[Any, Any]:
+    """
+    Load and configure the language model and tokenizer.
     
-train_data, train_labels, test_data = reading_vecs.load_reading_vec_dataset()
+    Args:
+        model_name (str): Name or path of the model to load
         
-fairness_test_data = test_data[1::2][:100] # use only the first 100 racist examples
-dataset_names = args.dataset_names.split(',') if args.dataset_names != None else ['fairness_test_data']
-wrap_model = WrapModel(model, tokenizer, train_data, train_labels)
-pca_vectors, pca_signs, layer_ids_injections = wrap_model.prepare_wrapped_model()
+    Returns:
+        Tuple of (model, tokenizer)
+    """
+    print(f"Loading model: {model_name}")
+    
+    # Load model with appropriate configuration
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name, 
+        torch_dtype=torch.float16,
+        device_map="auto",
+        use_cache=True
+    ).eval()
+    
+    # Configure tokenizer based on model architecture
+    use_fast_tokenizer = "LlamaForCausalLM" not in model.config.architectures
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_name,
+        use_fast=use_fast_tokenizer,
+        padding_side="left",
+        legacy=False,
+    )
+    
+    # Set up tokenizer special tokens
+    tokenizer.pad_token_id = 0 if tokenizer.pad_token_id is None else tokenizer.pad_token_id
+    tokenizer.bos_token_id = 1
+    
+    print("Model loading completed!")
+    return model, tokenizer
 
-for dataset_name in dataset_names: 
-    if dataset_name == 'fairness_test_data':
-        dataset = Dataset.from_dict({'input': fairness_test_data})
+
+def setup_reading_vectors(args: GenerationArgsSafety) -> Tuple[List, List, List]:
+    """
+    Set up reading vectors for representation engineering based on configuration.
+    
+    Args:
+        args: Configuration arguments containing experiment parameters
+        
+    Returns:
+        Tuple of (train_data, train_labels, test_data)
+    """
+    if args.is_synth_reading_vectors:
+        # Use synthetic reading vectors for fairness experiments
+        model_name_for_generation = (
+            'meta-llama/Meta-Llama-3.1-8B-Instruct' if "Llama-3" in args.model_name 
+            else 'meta-llama/Llama-2-13b-chat-hf'
+        )
+        
+        reading_vec_dataset_save_path = (
+            f'/path/to/data/reading_vec_datasets/reading_vec_dataset_'
+            f'{args.model_name.replace("/","_")}_fairness.json'
+        )
+        
+        reading_vecs = Synthetic_ReadingVectors_Fairness(
+            args, 
+            reading_vec_dataset_save_path, 
+            model_name_for_generation
+        )
     else:
-        dataset = load_test_dataset(dataset_path=args.dataset_path, dataset_name=dataset_name)
-    #test model on dataset for various norms of injected vectors
-    x = list(np.round(np.arange(args.start_coeff, args.end_coeff, args.coeff_step), 1))
-    behavior_harmful_mean = {key: 0 for key in x}
-    behavior_harmful_std = {key: 0 for key in x}
-    all_answers_dict = {key: {} for key in x}
+        # Use RLHF aligned model reading vectors
+        reading_vecs = ReadingVectors_Fairness(args)
+    
+    return reading_vecs.load_reading_vec_dataset()
 
-    for coeff in x:
-        wrapped_model = wrap_model.wrap_model(coeff)
-        args.num_instructions = min(args.num_instructions, len(dataset))
-        # full auto-regreesive response generation
-        all_answers, all_logits = generate_responses(
-                                                    model,
-                                                    tokenizer, 
-                                                    dataset,
-                                                    args, 
-                                                    template_format='default',
-                                                    batch_size=16,
-                                                    do_sample=False
-                                                ) 
-        # Only one forward pass to get the first logits
-        all_logits_forward_pass = feed_forward_responses(model, tokenizer, dataset, args, template_format='default', batch_size=16)
-        behavior_all_samples = feed_dialog_behavior(tokenizer, dataset, args, all_answers, batch_size=16)
-        print(behavior_all_samples)
+
+def prepare_test_dataset(dataset_name: str, fairness_test_data: List[str], 
+                        dataset_path: str = None) -> Dataset:
+    """
+    Prepare the test dataset for evaluation.
+    
+    Args:
+        dataset_name: Name of the dataset to load
+        fairness_test_data: Pre-prepared fairness test examples
+        dataset_path: Optional path to dataset files
         
-        behavior_harmful_mean[coeff] = np.nanmean(np.nanmean(behavior_all_samples, axis=0))        
-        behavior_harmful_std[coeff] = np.nanmean(np.nanstd(behavior_all_samples, axis=0))
-        print(f'\np_mean for coeff = {coeff}: {behavior_harmful_mean[coeff]}')
-        print(f'\nacc_std for coeff {coeff}: {behavior_harmful_std[coeff]}')
+    Returns:
+        Dataset object ready for evaluation
+    """
+    if dataset_name == 'fairness_test_data':
+        return Dataset.from_dict({'input': fairness_test_data})
+    else:
+        return load_test_dataset(dataset_path=dataset_path, dataset_name=dataset_name)
 
-        os.makedirs(args.output_dir, exist_ok=True)
-        with open(f'{args.output_dir}/safety_fairness_{args.model_name.replace("/","_")}_stats_sample.json', 'w') as file:
-            results = {'behavior_harmful_mean': behavior_harmful_mean, 'behavior_harmful_std': behavior_harmful_std}
-            json.dump(results, file)
-            
+
+def evaluate_model_fairness(model: Any, tokenizer: Any, wrap_model: WrapModel, 
+                           dataset: Dataset, args: GenerationArgsSafety) -> Tuple[Dict, Dict, Dict]:
+    """
+    Evaluate model fairness across different coefficient values.
+    
+    Args:
+        model: The language model to evaluate
+        tokenizer: Model tokenizer
+        wrap_model: Wrapper for REPE interventions
+        dataset: Test dataset
+        args: Configuration arguments
+        
+    Returns:
+        Tuple of (behavior_means, behavior_stds, all_answers)
+    """
+    # Generate coefficient range for testing
+    coefficient_range = list(np.round(np.arange(args.start_coeff, args.end_coeff, args.coeff_step), 1))
+    
+    # Initialize result containers
+    behavior_harmful_mean = {coeff: 0 for coeff in coefficient_range}
+    behavior_harmful_std = {coeff: 0 for coeff in coefficient_range}
+    all_answers_dict = {coeff: {} for coeff in coefficient_range}
+    
+    # Evaluate each coefficient
+    for coeff in coefficient_range:
+        print(f"\nEvaluating coefficient: {coeff}")
+        
+        # Wrap model with current coefficient
+        wrapped_model = wrap_model.wrap_model(coeff)
+        
+        # Ensure we don't exceed dataset size
+        args.num_instructions = min(args.num_instructions, len(dataset))
+        
+        # Generate full auto-regressive responses
+        all_answers, all_logits = generate_responses(
+            model,
+            tokenizer, 
+            dataset,
+            args, 
+            template_format='default',
+            batch_size=16,
+            do_sample=False
+        )
+        
+        # Get first-token logits via single forward pass
+        all_logits_forward_pass = feed_forward_responses(
+            model, 
+            tokenizer, 
+            dataset, 
+            args, 
+            template_format='default', 
+            batch_size=16
+        )
+        
+        # Analyze dialog behavior (agreement vs refusal)
+        behavior_all_samples = feed_dialog_behavior(
+            tokenizer, 
+            dataset, 
+            args, 
+            all_answers, 
+            batch_size=16
+        )
+        
+        print(f"Behavior samples: {behavior_all_samples}")
+        
+        # Calculate statistics
+        behavior_harmful_mean[coeff] = np.nanmean(np.nanmean(behavior_all_samples, axis=0))
+        behavior_harmful_std[coeff] = np.nanmean(np.nanstd(behavior_all_samples, axis=0))
+        
+        print(f'Mean behavior score for coeff = {coeff}: {behavior_harmful_mean[coeff]:.4f}')
+        print(f'Std behavior score for coeff = {coeff}: {behavior_harmful_std[coeff]:.4f}')
+        
+        # Store answers for detailed analysis
         all_answers_dict[coeff] = all_answers
-        with open(f'{args.output_dir}/safety_fairness_{args.model_name.replace("/","_")}_answers_sample.json', 'w') as file:
-            json.dump(all_answers_dict, file)
+    
+    return behavior_harmful_mean, behavior_harmful_std, all_answers_dict
+
+
+def save_experiment_results(behavior_means: Dict, behavior_stds: Dict, 
+                           all_answers: Dict, model_name: str, output_dir: str) -> None:
+    """
+    Save experiment results to JSON files.
+    
+    Args:
+        behavior_means: Dictionary of mean behavior scores by coefficient
+        behavior_stds: Dictionary of standard deviation scores by coefficient
+        all_answers: Dictionary of all generated answers by coefficient
+        model_name: Name of the evaluated model
+        output_dir: Directory to save results
+    """
+    # Create output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Sanitize model name for filename
+    safe_model_name = model_name.replace("/", "_")
+    
+    # Save statistics
+    stats_filename = f'{output_dir}/safety_fairness_{safe_model_name}_stats_sample.json'
+    with open(stats_filename, 'w') as file:
+        results = {
+            'behavior_harmful_mean': behavior_means, 
+            'behavior_harmful_std': behavior_stds
+        }
+        json.dump(results, file, indent=2)
+    
+    # Save detailed answers
+    answers_filename = f'{output_dir}/safety_fairness_{safe_model_name}_answers_sample.json'
+    with open(answers_filename, 'w') as file:
+        json.dump(all_answers, file, indent=2)
+    
+    print(f"\nResults saved to:")
+    print(f"  Statistics: {stats_filename}")
+    print(f"  Answers: {answers_filename}")
+
+
+def main():
+    """
+    Main execution function for the fairness safety evaluation experiment.
+    """
+    # Parse command line arguments
+    args = GenerationArgsSafety()
+    print("Experiment Configuration:")
+    print(args)
+    print("-" * 50)
+    
+    # Setup model and tokenizer
+    model, tokenizer = setup_model_and_tokenizer(args.model_name)
+    
+    # Get model vocabulary for analysis
+    vocabulary = tokenizer.get_vocab()
+    
+    # Setup reading vectors for representation engineering
+    train_data, train_labels, test_data = setup_reading_vectors(args)
+    
+    # Prepare fairness test data (first 100 biased examples)
+    fairness_test_data = test_data[1::2][:100]
+    
+    # Parse dataset names
+    dataset_names = (
+        args.dataset_names.split(',') if args.dataset_names 
+        else ['fairness_test_data']
+    )
+    
+    # Initialize model wrapper for REPE interventions
+    wrap_model = WrapModel(model, tokenizer, train_data, train_labels)
+    pca_vectors, pca_signs, layer_ids_injections = wrap_model.prepare_wrapped_model()
+    
+    print(f"Processing {len(dataset_names)} dataset(s): {dataset_names}")
+    
+    # Evaluate each dataset
+    for dataset_name in dataset_names:
+        print(f"\n{'='*60}")
+        print(f"Evaluating dataset: {dataset_name}")
+        print(f"{'='*60}")
+        
+        # Prepare test dataset
+        dataset = prepare_test_dataset(
+            dataset_name, 
+            fairness_test_data, 
+            getattr(args, 'dataset_path', None)
+        )
+        
+        # Run fairness evaluation
+        behavior_means, behavior_stds, all_answers = evaluate_model_fairness(
+            model, tokenizer, wrap_model, dataset, args
+        )
+        
+        # Save results
+        save_experiment_results(
+            behavior_means, behavior_stds, all_answers, 
+            args.model_name, args.output_dir
+        )
+    
+    print(f"\n{'='*60}")
+    print("Experiment completed successfully!")
+    print(f"{'='*60}")
+
+
+if __name__ == "__main__":
+    main()
