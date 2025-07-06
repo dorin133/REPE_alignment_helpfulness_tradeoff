@@ -32,5 +32,4 @@ Includes automated shell scripts for batch experiment execution
 - Multi-dimensional evaluation (safety, helpfulness, fairness)
 - Integration with MMLU and HumanEval benchmarks
 - Statistical analysis and visualization tools
-- Support for various language models (Llama family, etc.)
-- Batch processing capabilities for large-
+- Support for various language models (Llama family, and additional models can be integrated with ease)
