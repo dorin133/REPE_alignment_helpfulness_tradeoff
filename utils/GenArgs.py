@@ -279,6 +279,7 @@ class GenerationArgsSafety:
         parser.add_argument(
             '--dataset_path', 
             default='justinphan3110/harmful_harmless_instructions', 
+            # default='McGill-NLP/stereoset', 
             type=str, 
             help='Path or name of the safety dataset'
         )
@@ -312,7 +313,7 @@ class GenerationArgsSafety:
         # Experiment parameters
         parser.add_argument(
             '--num_instructions', 
-            default=16, 
+            default=96, 
             type=int, 
             help='Number of instructions to process per experiment'
         )
@@ -386,135 +387,135 @@ class GenerationArgsSafety:
         )
 
 
-class GenerationArgsQuality:
-    """
-    Configuration class for quality evaluation experiments.
+# class GenerationArgsQuality:
+#     """
+#     Configuration class for quality evaluation experiments.
     
-    This class handles argument parsing and configuration for experiments that evaluate
-    the quality of language model outputs, typically using human preference datasets
-    and measuring how REPE interventions affect response quality.
-    """
+#     This class handles argument parsing and configuration for experiments that evaluate
+#     the quality of language model outputs, typically using human preference datasets
+#     and measuring how REPE interventions affect response quality.
+#     """
     
-    def __init__(self):
-        """Initialize quality experiment arguments with command line parsing."""
-        parser = argparse.ArgumentParser(
-            description="Argument parser for quality evaluation experiments"
-        )
+#     def __init__(self):
+#         """Initialize quality experiment arguments with command line parsing."""
+#         parser = argparse.ArgumentParser(
+#             description="Argument parser for quality evaluation experiments"
+#         )
         
-        # Model configuration
-        parser.add_argument(
-            '--model_name', 
-            default='meta-llama/Meta-Llama-3.1-8B-Instruct', 
-            type=model_name_verify, 
-            help='Name or path of the model to evaluate'
-        )
+#         # Model configuration
+#         parser.add_argument(
+#             '--model_name', 
+#             default='meta-llama/Meta-Llama-3.1-8B-Instruct', 
+#             type=model_name_verify, 
+#             help='Name or path of the model to evaluate'
+#         )
         
-        # Dataset configuration
-        parser.add_argument(
-            '--dataset_path', 
-            default='PKU-Alignment/PKU-SafeRLHF', 
-            type=str, 
-            help='Path or name of the quality evaluation dataset'
-        )
-        parser.add_argument(
-            '--dataset_names', 
-            default=None, 
-            type=parse_comma_separated, 
-            help='Comma-separated list of dataset configurations'
-        )
+#         # Dataset configuration
+#         parser.add_argument(
+#             '--dataset_path', 
+#             default='PKU-Alignment/PKU-SafeRLHF', 
+#             type=str, 
+#             help='Path or name of the quality evaluation dataset'
+#         )
+#         parser.add_argument(
+#             '--dataset_names', 
+#             default=None, 
+#             type=parse_comma_separated, 
+#             help='Comma-separated list of dataset configurations'
+#         )
         
-        # Coefficient range configuration
-        parser.add_argument(
-            '--start_coeff', 
-            default=-3.5, 
-            type=float, 
-            help='Starting coefficient for REPE intervention range'
-        )
-        parser.add_argument(
-            '--end_coeff', 
-            default=5.2, 
-            type=float, 
-            help='Ending coefficient for REPE intervention range'
-        )
-        parser.add_argument(
-            '--coeff_step', 
-            default=0.25, 
-            type=float, 
-            help='Step size for coefficient range'
-        )
+#         # Coefficient range configuration
+#         parser.add_argument(
+#             '--start_coeff', 
+#             default=-3.5, 
+#             type=float, 
+#             help='Starting coefficient for REPE intervention range'
+#         )
+#         parser.add_argument(
+#             '--end_coeff', 
+#             default=5.2, 
+#             type=float, 
+#             help='Ending coefficient for REPE intervention range'
+#         )
+#         parser.add_argument(
+#             '--coeff_step', 
+#             default=0.25, 
+#             type=float, 
+#             help='Step size for coefficient range'
+#         )
         
-        # Experiment parameters
-        parser.add_argument(
-            '--num_instructions', 
-            default=48, 
-            type=int, 
-            help='Number of instructions to process per experiment'
-        )
-        parser.add_argument(
-            '--num_samples', 
-            default=1, 
-            type=int, 
-            help='Number of samples to generate per instruction'
-        )
+#         # Experiment parameters
+#         parser.add_argument(
+#             '--num_instructions', 
+#             default=48, 
+#             type=int, 
+#             help='Number of instructions to process per experiment'
+#         )
+#         parser.add_argument(
+#             '--num_samples', 
+#             default=1, 
+#             type=int, 
+#             help='Number of samples to generate per instruction'
+#         )
         
-        # Reading vectors configuration
-        parser.add_argument(
-            '--is_synth_reading_vectors', 
-            action='store_true', 
-            help='Use synthetic reading vectors instead of dataset-derived ones'
-        )
+#         # Reading vectors configuration
+#         parser.add_argument(
+#             '--is_synth_reading_vectors', 
+#             action='store_true', 
+#             help='Use synthetic reading vectors instead of dataset-derived ones'
+#         )
         
-        # Output configuration
-        parser.add_argument(
-            '--output_dir', 
-            default=None, 
-            type=str, 
-            help='Directory to save experiment results'
-        )
+#         # Output configuration
+#         parser.add_argument(
+#             '--output_dir', 
+#             default=None, 
+#             type=str, 
+#             help='Directory to save experiment results'
+#         )
         
-        # Parse arguments and store as instance variables
-        args = parser.parse_args()
-        self._initialize_from_args(args)
+#         # Parse arguments and store as instance variables
+#         args = parser.parse_args()
+#         self._initialize_from_args(args)
     
-    def _initialize_from_args(self, args: argparse.Namespace) -> None:
-        """
-        Initialize instance variables from parsed arguments.
+#     def _initialize_from_args(self, args: argparse.Namespace) -> None:
+#         """
+#         Initialize instance variables from parsed arguments.
         
-        Args:
-            args: Parsed command line arguments
-        """
-        self.model_name = args.model_name
-        self.dataset_path = args.dataset_path
-        self.dataset_names = args.dataset_names
-        self.start_coeff = args.start_coeff
-        self.end_coeff = args.end_coeff
-        self.coeff_step = args.coeff_step
-        self.num_instructions = args.num_instructions
-        self.num_samples = args.num_samples
-        self.is_synth_reading_vectors = args.is_synth_reading_vectors
-        self.output_dir = args.output_dir
+#         Args:
+#             args: Parsed command line arguments
+#         """
+#         self.model_name = args.model_name
+#         self.dataset_path = args.dataset_path
+#         self.dataset_names = args.dataset_names
+#         self.start_coeff = args.start_coeff
+#         self.end_coeff = args.end_coeff
+#         self.coeff_step = args.coeff_step
+#         self.num_instructions = args.num_instructions
+#         self.num_samples = args.num_samples
+#         self.is_synth_reading_vectors = args.is_synth_reading_vectors
+#         self.output_dir = args.output_dir
         
-        # Generate model-specific templates
-        self.template_system_and_user = prompt_template_system_and_user(self.model_name)
-        self.template_user = prompt_template_user(self.model_name)
+#         # Generate model-specific templates
+#         self.template_system_and_user = prompt_template_system_and_user(self.model_name)
+#         self.template_user = prompt_template_user(self.model_name)
         
-        # Sampling configuration (disabled for reproducibility)
-        self.do_sample = False
+#         # Sampling configuration (disabled for reproducibility)
+#         self.do_sample = False
     
-    def __str__(self) -> str:
-        """Return a formatted string representation of all configuration parameters."""
-        return (
-            f"Model Name or Path: {self.model_name}\n"
-            f"Dataset Path: {self.dataset_path}\n"
-            f"Dataset Names: {self.dataset_names}\n"
-            f"Start Coeff: {self.start_coeff}\n"
-            f"End Coeff: {self.end_coeff}\n"
-            f"Coeff Step: {self.coeff_step}\n"
-            f"Number of Instructions: {self.num_instructions}\n"
-            f"Number of Samples: {self.num_samples}\n"
-            f"Is Synthetic Reading Vectors: {self.is_synth_reading_vectors}\n"
-            f"Output directory: {self.output_dir}\n"
-            f"Template System and User: {self.template_system_and_user}\n"
-            f"Template User: {self.template_user}\n"
-            f"Do Sample: {self.do_sample}\n"
-        )
+#     def __str__(self) -> str:
+#         """Return a formatted string representation of all configuration parameters."""
+#         return (
+#             f"Model Name or Path: {self.model_name}\n"
+#             f"Dataset Path: {self.dataset_path}\n"
+#             f"Dataset Names: {self.dataset_names}\n"
+#             f"Start Coeff: {self.start_coeff}\n"
+#             f"End Coeff: {self.end_coeff}\n"
+#             f"Coeff Step: {self.coeff_step}\n"
+#             f"Number of Instructions: {self.num_instructions}\n"
+#             f"Number of Samples: {self.num_samples}\n"
+#             f"Is Synthetic Reading Vectors: {self.is_synth_reading_vectors}\n"
+#             f"Output directory: {self.output_dir}\n"
+#             f"Template System and User: {self.template_system_and_user}\n"
+#             f"Template User: {self.template_user}\n"
+#             f"Do Sample: {self.do_sample}\n"
+#         )
